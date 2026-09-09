@@ -74,10 +74,9 @@ enum DebugPreviews {
         OnboardingStagePreview.beat = 4
         defer { OnboardingStagePreview.beat = nil }
         // Onboarding names the talk key throughout. Render the default a first-time user sees,
-        // not whatever this machine happens to be set to. Writes are suppressed, so nothing sticks.
-        let configuredTalkKey = Settings.shared.talkKey
-        Settings.shared.talkKey = "fn"
-        defer { Settings.shared.talkKey = configuredTalkKey }
+        // not whatever this machine happens to be set to. This is a display override; the stored setting is never touched.
+        Settings.previewTalkKeyOverride = "fn"
+        defer { Settings.previewTalkKeyOverride = nil }
         let m = NotchController.shared.model
         for step in 0..<6 {
             // Step 4 mirrors the notch. Give it a finished turn so the mirror is not an empty box.

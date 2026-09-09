@@ -101,8 +101,21 @@ final class Settings: ObservableObject {
             .map { $0 }
     }
 
+#if DEBUG
+    /// Screenshot harness only: the talk key to *display* without touching the stored setting.
+    nonisolated(unsafe) static var previewTalkKeyOverride: String?
+#endif
+
+    /// The talk key the UI should name. Equal to `talkKey` outside the DEBUG screenshot harness.
+    var displayTalkKey: String {
+#if DEBUG
+        if let o = Settings.previewTalkKeyOverride { return o }
+#endif
+        return talkKey
+    }
+
     var talkKeyLabel: String {
-        switch talkKey {
+        switch displayTalkKey {
         case "rightCommand": return "Right ⌘"
         case "rightOption": return "Right ⌥"
         case "rightControl": return "Right ⌃"

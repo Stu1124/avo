@@ -189,7 +189,7 @@ private struct NotchStage: View {
                 }
                 if hint {
                     HStack(spacing: DS.Space.s) {
-                        KeyCap(text: settings.talkKeyLabel, symbol: settings.talkKey == "fn" ? "globe" : nil)
+                        KeyCap(text: settings.talkKeyLabel, symbol: settings.displayTalkKey == "fn" ? "globe" : nil)
                         Text("hold to talk").font(Theme.text(12)).foregroundStyle(Theme.ink3)
                         Spacer(minLength: 0)
                     }

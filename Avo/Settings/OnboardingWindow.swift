@@ -256,7 +256,7 @@ struct OnboardingView: View {
     }
 
     private var talkKeyCap: some View {
-        KeyCap(text: settings.talkKeyLabel, symbol: settings.talkKey == "fn" ? "globe" : nil)
+        KeyCap(text: settings.talkKeyLabel, symbol: settings.displayTalkKey == "fn" ? "globe" : nil)
     }
 
     // MARK: 1 · Welcome
