@@ -38,26 +38,26 @@ struct GeneralPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
-            PageHeader(title: "General", subtitle: "How Avo listens, sees and thinks.")
+            PageHeader(title: "General", subtitle: "Keys, context, model and what Avo keeps.")
             SectionCard(title: "Keys") {
-                PickerRow(title: "Hold to talk", subtitle: "Release to send. A silent modifier tap cancels quietly; fn/F-key taps open the composer. Esc cancels. ⌃⌥ always works as an alias.", selection: $s.talkKey,
+                PickerRow(title: "Hold to talk", subtitle: "Release to send. Tapping a modifier cancels; tapping fn or an F-key opens the composer. Esc cancels. ⌃⌥ works as an alias.", selection: $s.talkKey,
                           options: [(id: "fn", label: "fn / 🌐"), (id: "rightCommand", label: "Right ⌘"), (id: "rightOption", label: "Right ⌥"), (id: "rightControl", label: "Right ⌃"), (id: "controlOption", label: "⌃ ⌥"), (id: "f5", label: "F5"), (id: "f6", label: "F6")])
                 PickerRow(title: "Open composer", subtitle: "Global shortcut to type to Avo. Clicking the notch also opens it.", selection: $s.composerShortcut,
                           options: [(id: "optionSpace", label: "⌥ Space"), (id: "commandShiftSpace", label: "⌘ ⇧ Space"), (id: "controlSpace", label: "⌃ Space"), (id: "fnSpace", label: "fn Space"), (id: "none", label: "Off")])
             }
-            SectionCard(title: "Context", footer: "Text you highlight is attached whenever it exists and shows as a chip in the notch. Copied text stays out.") {
+            SectionCard(title: "Context", footer: "Avo attaches text you have highlighted and shows it as a chip in the notch. It does not read your clipboard.") {
                 ToggleRow(title: "Screen awareness", subtitle: "Lets Avo capture your screen and bring it into the notch.", isOn: $s.screenAwareness)
-                ToggleRow(title: "Always attach the screen", subtitle: "Off: the screen is captured only when you refer to it (\"this\", \"here\", \"on my screen\"); Avo can still take a look on its own when it needs one. On: every request, which costs about 1K tokens each.", isOn: $s.alwaysScreenshot)
+                ToggleRow(title: "Always attach the screen", subtitle: "Off: Avo captures the screen when you refer to it (\"this\", \"here\", \"on my screen\") and when a request needs it. On: every request, at about 1K tokens each.", isOn: $s.alwaysScreenshot)
                     .disabled(!s.screenAwareness)
-                ToggleRow(title: "Screenshot animation", subtitle: "Watch the capture fly into the notch. Turn off for a silent capture.", isOn: $s.animateScreenshots)
+                ToggleRow(title: "Screenshot animation", subtitle: "Animates the capture into the notch. Off captures with no animation.", isOn: $s.animateScreenshots)
                     .disabled(!s.screenAwareness)
                 ToggleRow(title: "Ask before actions", subtitle: "Shows an editable card before anything is sent, created or deleted.", isOn: $s.confirmActions)
-                ToggleRow(title: "Sounds", subtitle: "Soft cues when listening starts, cards appear and work finishes.", isOn: $s.soundsEnabled)
+                ToggleRow(title: "Sounds", subtitle: "Plays a short cue when listening starts and when a request finishes.", isOn: $s.soundsEnabled)
             }
-            SectionCard(title: "Persona", footer: "Context files are read on every request and sent whole, so keep them short.") {
+            SectionCard(title: "Persona", footer: "Avo reads context files on every request and sends them whole, so keep them short.") {
                 TextRow(title: "Your name", subtitle: "What Avo calls you. Leave it empty and Avo says \"the user\".", placeholder: "Optional", text: $s.userName, width: 200)
                 MultilineTextRow(title: "Writing style", subtitle: "Applied whenever Avo drafts a message, email or reply for you.", text: $s.writingStyle)
-                ActionRow(title: "Context files", subtitle: "Notes or rules Avo should always have on hand.") {
+                ActionRow(title: "Context files", subtitle: "Notes or rules Avo reads on every request.") {
                     DSPill("Add file…", icon: "plus") { addContextFiles() }
                 }
                 for path in s.contextFiles {
@@ -88,7 +88,7 @@ struct GeneralPage: View {
                     PickerRow(title: "Default reminder list", subtitle: "Where new reminders go unless you name a list. \"Default list\" uses the list Reminders itself defaults to.",
                               selection: $s.defaultReminderList, options: [(id: "", label: "Default list")] + reminderLists)
                 }
-                ToggleRow(title: "Launch at login", subtitle: "Start Avo quietly in the menu bar when you sign in.", isOn: launchBinding)
+                ToggleRow(title: "Launch at login", subtitle: "Starts Avo in the menu bar when you sign in.", isOn: launchBinding)
             }
             DataSection(s: s)
         }
@@ -162,7 +162,7 @@ struct DataSection: View {
     }
 
     var body: some View {
-        SectionCard(title: "Data", footer: message ?? "Screenshots live in \(GeneralPage.shortPath(Paths.screenshotsDir.path)). History is a single JSON file next to it. Both are kept forever unless you pick a limit; a limit is applied at launch.") {
+        SectionCard(title: "Data", footer: message ?? "Screenshots live in \(GeneralPage.shortPath(Paths.screenshotsDir.path)). History is a single JSON file next to it. Avo keeps both forever unless you pick a limit, and applies that limit at launch.") {
             PickerRow(title: "Keep screenshots for",
                       subtitle: usage.count == 0 ? "Every screen-aware request saves one." : "\(usage.count) file\(usage.count == 1 ? "" : "s") · \(Retention.formatBytes(usage.bytes)).",
                       selection: binding(\.screenshotRetentionDays), options: Self.retentions)
@@ -310,10 +310,10 @@ struct AppsPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
-            PageHeader(title: "Apps", subtitle: "What Avo can reach. Off means the model never sees those tools.")
+            PageHeader(title: "Apps", subtitle: "What Avo can reach. Turning a group off hides its tools from the model.")
             MCPServersSection(model: mcp)
             if model.groups.isEmpty {
-                EmptyState(icon: "square.grid.2x2", text: "No tools registered yet. They arrive a moment after launch.")
+                EmptyState(icon: "square.grid.2x2", text: "No tools registered yet. Avo registers them a moment after launch.")
             }
             ForEach(model.groups) { g in
                 let open = expanded.contains(g.name)
@@ -406,7 +406,7 @@ struct GooglePage: View {
             PageHeader(title: "Google", subtitle: "Gmail, Calendar and Drive through your own account.")
             SectionCard(title: "Account", footer: error) {
                 ActionRow(title: connected ? (email ?? "Connected") : "Not connected",
-                          subtitle: connected ? "Avo can read and act in Gmail, Calendar and Drive." : "Sign in with Google in your browser. Nothing is stored except a refresh token in your Keychain.",
+                          subtitle: connected ? "Avo can read and act in Gmail, Calendar and Drive." : "Sign in with Google in your browser. Avo stores a refresh token in your Keychain.",
                           icon: "globe") {
                     StatusLabel(state: connected ? .ok : .off, text: connected ? "Connected" : "Off")
                     if connected {
@@ -424,7 +424,7 @@ struct GooglePage: View {
                     DSPill("Choose credentials JSON…") { chooseCredentials() }
                 }
             }
-            SectionCard(title: "Scopes", footer: "Requested once at sign-in. Revoke any time at myaccount.google.com → Security → Third-party access.") {
+            SectionCard(title: "Scopes", footer: "Avo asks for these once at sign-in. Revoke them at myaccount.google.com → Security → Third-party access.") {
                 ActionRow(title: "What Avo asks for", subtitle: scopeNames.joined(separator: " · ")) { EmptyView() }
             }
         }
@@ -499,12 +499,12 @@ struct CodingPage: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
             PageHeader(title: "Coding", subtitle: "Hand work to Claude Code or Codex from your voice.")
-            SectionCard(title: "Agent", footer: s.codingAutoApprove ? "With auto-approve on, the agent changes files and runs commands without stopping to ask. Reserve it for projects you could recover if something goes wrong." : nil) {
+            SectionCard(title: "Agent", footer: s.codingAutoApprove ? "With auto-approve on, the agent changes files and runs commands without asking. Use it on projects you can restore from git." : nil) {
                 PickerRow(title: "Default agent", subtitle: "Used unless you name one.", selection: $s.codingDefaultAgent,
                           options: [(id: "claude", label: "Claude Code"), (id: "codex", label: "Codex")])
                 ToggleRow(title: "Auto-approve", subtitle: "Skip permission prompts inside the coding agent.", isOn: $s.codingAutoApprove)
             }
-            SectionCard(title: "Detected CLIs", footer: "Looked up with your login shell (/bin/zsh -lc). Install with npm to add a missing one.") {
+            SectionCard(title: "Detected CLIs", footer: "Avo looks these up with your login shell (/bin/zsh -lc). Install a missing one with npm.") {
                 cliRow("Claude Code", cmd: "claude")
                 cliRow("Codex", cmd: "codex")
             }
@@ -575,11 +575,11 @@ struct PermissionsPage: View {
     @ObservedObject var model: PermissionsModel
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
-            PageHeader(title: "Permissions", subtitle: "Status updates live. Request shows the system prompt where macOS offers one.")
+            PageHeader(title: "Permissions", subtitle: "Status updates live. Request opens the macOS prompt where one exists.")
             SectionCard(title: "Required to talk", footer: "Onboarding asks for these four. Avo cannot hear you without them.") {
                 PermissionKind.upFront.map { AnyView(PermissionRow(kind: $0, model: model)) }
             }
-            SectionCard(title: "Asked when a tool needs one", footer: "Avo requests each of these the first time something actually needs it. Grant them early here if you would rather not be interrupted. Full Disk Access has no in-app prompt: open Settings and add Avo to the list.") {
+            SectionCard(title: "Asked when a tool needs one", footer: "Avo requests each of these the first time a tool needs it. Grant them here to skip the interruption. Full Disk Access has no in-app prompt: open System Settings and add Avo to the list.") {
                 PermissionKind.allCases.filter { !$0.essential }.map { AnyView(PermissionRow(kind: $0, model: model)) }
             }
         }
@@ -638,7 +638,7 @@ struct AboutPage: View {
                     }
                 }
                 ToggleRow(title: "Redact spoken text",
-                          subtitle: "Replaces what you said, and what Avo passed to each tool, with [redacted] in the exported log. Off: your requests are included as you said them.",
+                          subtitle: "Replaces what you said, and what Avo passed to each tool, with [redacted] in the exported log. Off: the log keeps your requests as you said them.",
                           isOn: $redactSpokenText)
                 ActionRow(title: "Export diagnostics", subtitle: "Zips your log and settings to the Desktop for a bug report. No keys or tokens. macOS asks for Desktop access the first time.") {
                     DSPill("Export", icon: "square.and.arrow.up", busy: exporting) { exportDiagnostics() }

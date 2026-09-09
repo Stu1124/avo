@@ -15,9 +15,9 @@ struct HandsFreeSection: View {
     }
 
     var body: some View {
-        SectionCard(title: "Hands-free", footer: "Keeps the microphone open and listens on-device for the wake phrase only. Say it, then your request; Avo runs it after a short pause. Pauses automatically during push-to-talk, voice mode, and while Avo speaks.") {
+        SectionCard(title: "Hands-free", footer: "Keeps the microphone open and listens on-device for the wake phrase. Say the phrase, then your request; Avo runs it after a short pause. It pauses during push-to-talk, voice mode, and while Avo speaks.") {
             if #available(macOS 26, *) {
-                ToggleRow(title: "Listen for a wake word", subtitle: "On-device. Nothing leaves the Mac until the phrase is heard.", isOn: $s.handsFree)
+                ToggleRow(title: "Listen for a wake word", subtitle: "Runs on this Mac. Avo sends nothing until it hears the phrase.", isOn: $s.handsFree)
                 TextRow(title: "Wake word", subtitle: "“Hey Avo”, “OK Avo” and “Avo” always work.", placeholder: "Hey Avo", text: $s.wakeWord, width: 200)
                 ActionRow(title: "Status") {
                     StatusLabel(state: status.0, text: status.1)

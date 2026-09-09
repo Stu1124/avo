@@ -651,7 +651,7 @@ enum KeyProvider: String, CaseIterable, Identifiable {
         case .openAI: return "Brain model. Voice mode needs OpenAI."
         case .gemini: return "Spoken replies (TTS)"
         case .fish: return "Alternate voices"
-        case .xai: return "Grok, optional"
+        case .xai: return "Grok models. Optional."
         }
     }
     var keychainKey: String {
@@ -807,16 +807,16 @@ enum PermissionKind: String, CaseIterable, Identifiable {
     }
     var detail: String {
         switch self {
-        case .inputMonitoring: return "Detects the talk key in any app."
-        case .accessibility: return "Reads selected text and the front app."
+        case .inputMonitoring: return "Detects the talk key while another app is in front."
+        case .accessibility: return "Reads your selected text and the app you are in."
         case .screenRecording: return "Lets Avo see your screen on request."
-        case .microphone: return "Hears you while you hold your talk key."
-        case .speechRecognition: return "Turns speech into text on this Mac."
+        case .microphone: return "Hears you while you hold the talk key."
+        case .speechRecognition: return "Turns your speech into text on this Mac."
         case .fullDiskAccess: return "Reads iMessage history for context."
         case .reminders: return "Creates and reads your reminders."
         case .calendars: return "Reads events from Apple Calendar."
-        case .location: return "Where you are, for nearby searches."
-        case .automation: return "Controls Messages, Spotify and more."
+        case .location: return "Locates you for nearby searches."
+        case .automation: return "Controls Messages, Spotify and other apps."
         }
     }
     var icon: String {

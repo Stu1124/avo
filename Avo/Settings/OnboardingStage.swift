@@ -250,11 +250,11 @@ private struct WelcomeStage: View {
 
     @ViewBuilder private var loop: some View {
         switch beat {
-        case 0: NotchStage(settings: settings, phase: .idle, title: "Hold \(settings.talkKeyLabel) and talk", hint: true)
+        case 0: NotchStage(settings: settings, phase: .idle, title: "Hold \(settings.talkKeyLabel) and speak", hint: true)
         case 1: NotchStage(settings: settings, phase: .listening, title: "Listening", level: 0.7)
         case 2: NotchStage(settings: settings, phase: .listening, title: "Listening", level: 0.5, transcript: Self.said)
         default: NotchStage(settings: settings, phase: .done, title: "Avo", transcript: Self.said,
-                            reply: "Sent. Sam knows you're about ten minutes out.")
+                            reply: "Sent to Sam.")
         }
     }
 }
@@ -299,13 +299,6 @@ private struct BrainStage: View {
 private struct AccessStage: View {
     @ObservedObject var permissions: PermissionsModel
 
-    private static let reasons: [PermissionKind: String] = [
-        .microphone: "Hears you while you hold the key.",
-        .speechRecognition: "Turns your speech into text, here.",
-        .inputMonitoring: "Notices the key in any app.",
-        .accessibility: "Reads the text you have selected.",
-    ]
-
     var body: some View {
         // Two hand-built rows rather than a grid: the tiles have to share the stage's height evenly,
         // and a lazy grid sizes its rows to their content instead.
@@ -336,7 +329,7 @@ private struct AccessStage: View {
                         .foregroundStyle(on ? Theme.good : Theme.ink3)
                 }
                 Text(kind.title).font(DS.font(DS.Size.body, .semibold)).foregroundStyle(Theme.ink)
-                Text(Self.reasons[kind] ?? kind.detail)
+                Text(kind.detail)
                     .font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3).lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -363,7 +356,7 @@ private struct TryItStage: View {
         switch notch.phase {
         case .listening: return "Listening"
         case .thinking: return "Thinking"
-        default: return idle ? "Waiting for you" : "Avo"
+        default: return idle ? "Waiting" : "Avo"
         }
     }
 
@@ -431,7 +424,7 @@ private struct ReadyStage: View {
             VStack(spacing: DS.Space.s) {
                 ForEach(Self.examples, id: \.self) { e in ExamplePill(text: e) { run(e) } }
             }
-            Text("Speech stays on this Mac. Only your request text reaches the model you chose.")
+            Text("Speech stays on this Mac. Avo sends your request text to the model you chose.")
                 .font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3).lineSpacing(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)

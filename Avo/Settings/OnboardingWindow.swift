@@ -260,8 +260,8 @@ struct OnboardingView: View {
     // MARK: 1 · Welcome
 
     private var welcome: some View {
-        page("Hold. Speak. Done.",
-             "Hold \(settings.talkKeyLabel) anywhere, say what you want, and Avo does it.") {
+        page("Talk to your Mac.",
+             "Hold \(settings.talkKeyLabel), say what you want, and let go.") {
             panel {
                 HStack(spacing: DS.Space.s) {
                     talkKeyCap
@@ -278,7 +278,7 @@ struct OnboardingView: View {
     // MARK: 2 · Brain
 
     private var brainStep: some View {
-        page("Pick a brain.", "OpenAI with a key, or any OpenAI-compatible server.") {
+        page("Choose a model.", "OpenAI with a key, or any OpenAI-compatible server.") {
             SectionCard {
                 PickerRow(title: "Provider", selection: styleBinding, options: GeneralPage.styleOptions)
                 TextRow(title: "Base URL", placeholder: "https://api.openai.com/v1", text: $settings.apiBaseURL, width: 176, focused: $baseURLFocused)
@@ -296,7 +296,7 @@ struct OnboardingView: View {
     // MARK: 3 · Access
 
     private var permissionsStep: some View {
-        page("Four permissions.", "Microphone and Speech Recognition are required — macOS asks once.") {
+        page("Four permissions.", "Microphone and Speech Recognition are required. macOS asks once.") {
             VStack(alignment: .leading, spacing: DS.Space.m) {
                 VStack(spacing: 0) {
                     ForEach(Array(PermissionKind.upFront.enumerated()), id: \.element.id) { i, k in
@@ -305,7 +305,7 @@ struct OnboardingView: View {
                     }
                 }
                 .cardChrome()
-                Text("Everything else is asked later, the first time something needs it.")
+                Text("Avo asks for the others when a tool first needs one.")
                     .font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -315,7 +315,7 @@ struct OnboardingView: View {
     // MARK: 4 · Try it
 
     private var tryItStep: some View {
-        page("Say something.", "Hold \(settings.talkKeyLabel) and say “what time is it”.") {
+        page("Try it.", "Hold \(settings.talkKeyLabel) and say “what time is it”.") {
             panel {
                 VStack(alignment: .leading, spacing: DS.Space.m) {
                     HStack(spacing: DS.Space.s) {
@@ -340,7 +340,7 @@ struct OnboardingView: View {
     // MARK: 5 · Extras
 
     private var extrasStep: some View {
-        page("Two extras.", "Both optional, both changeable later in Settings.") {
+        page("Optional.", "Turn either on now or later in Settings.") {
             SectionCard(footer: googleError) {
                 ActionRow(title: googleEmail ?? "Google", subtitle: googleEmail == nil ? "Gmail, Calendar and Drive" : "Connected", icon: "globe") {
                     if googleEmail == nil {
@@ -377,11 +377,11 @@ struct OnboardingView: View {
     // MARK: 6 · Ready
 
     private var ready: some View {
-        page("You're set.", "Avo lives in your menu bar and under the notch.") {
+        page("Done.", "Avo lives in the menu bar and under the notch.") {
             VStack(spacing: 0) {
                 whereRow("menubar.rectangle", "Menu bar", "Status, history and Settings.")
                 Rectangle().fill(Theme.line).frame(height: 1).padding(.leading, 50)
-                whereRow("rectangle.topthird.inset.filled", "The notch", "Where every reply lands.")
+                whereRow("rectangle.topthird.inset.filled", "The notch", "Replies appear here.")
             }
             .cardChrome()
         }

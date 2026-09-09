@@ -110,7 +110,7 @@ struct MCPServersSection: View {
         SectionCard(title: "MCP servers", footer: footer) {
             if model.entries.isEmpty && !adding {
                 ActionRow(title: "No servers yet",
-                          subtitle: "Add a stdio command or an HTTP endpoint and its tools join the list above.",
+                          subtitle: "Add a stdio command or an HTTP endpoint, and Avo adds its tools to the list above.",
                           icon: MCPServers.icon) {
                     DSPill("Add server…", icon: "plus", style: .primary) { startAdding() }
                 }
