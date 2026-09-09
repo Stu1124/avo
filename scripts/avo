@@ -1,0 +1,36 @@
+#!/bin/zsh
+# avo — quick control for the Avo menu bar app.
+# usage: avo start|quit|restart|status|ask <text>|compose|settings|voice
+set -e
+APP="/Applications/Avo.app"
+
+case "${1:-}" in
+  start|open)
+    open "$APP" ;;
+  quit|stop)
+    osascript -e 'quit app "Avo"' >/dev/null 2>&1 || pkill -x Avo || true
+    echo "Avo quit." ;;
+  restart)
+    osascript -e 'quit app "Avo"' >/dev/null 2>&1 || pkill -x Avo || true
+    for i in {1..25}; do pgrep -x Avo >/dev/null || break; sleep 0.2; done
+    sleep 0.5
+    for i in {1..5}; do open "$APP" 2>/dev/null && break; sleep 0.5; done
+    echo "Avo restarted." ;;
+  status)
+    pgrep -x Avo >/dev/null && echo "running" || echo "not running" ;;
+  ask)
+    shift
+    [ $# -gt 0 ] || { echo "usage: avo ask <text>" >&2; exit 1; }
+    text=$(perl -MURI::Escape -e 'print uri_escape(join(" ", @ARGV))' "$@")
+    open "$APP"
+    for i in {1..25}; do pgrep -x Avo >/dev/null && break; sleep 0.2; done
+    open "avo://ask?text=$text" ;;
+  compose)
+    open "$APP"; open "avo://compose" ;;
+  settings)
+    open "$APP"; open "avo://settings" ;;
+  voice)
+    open "$APP"; open "avo://voice" ;;
+  *)
+    echo "usage: avo start|quit|restart|status|ask <text>|compose|settings|voice" ;;
+esac

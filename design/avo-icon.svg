@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Avo">
+  <title>Avo</title>
+  <defs>
+    <!-- Light falls from the upper left. Max 8% of the accent, gone well before the edge. -->
+    <radialGradient id="tint" cx="0.30" cy="0.24" r="0.82">
+      <stop offset="0" stop-color="#378FFF" stop-opacity="0.08" />
+      <stop offset="0.55" stop-color="#378FFF" stop-opacity="0.03" />
+      <stop offset="1" stop-color="#378FFF" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <!-- macOS icon tile: 824 of the 1024 grid, 100 px margin, r = 0.225 * 824. -->
+  <rect x="100" y="100" width="824" height="824" rx="185.4" ry="185.4" fill="#0B0D12" />
+  <rect x="100" y="100" width="824" height="824" rx="185.4" ry="185.4" fill="url(#tint)" />
+  <!-- Hairline so the near-black tile still has an edge on a dark desktop. -->
+  <rect x="101.5" y="101.5" width="821" height="821" rx="183.9" ry="183.9"
+        fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="3" />
+  <!-- The mark, scaled to 0.92 about the tile centre so the wide glyph keeps a proper
+       sidebearing inside the tile: ink 205-819 rather than 178-846, a margin of 105 on each
+       side of an 824 tile. design/avo-mark.svg holds the glyph at its natural size; only its
+       composition into the tile is scaled, uniformly, stroke included. -->
+  <g transform="translate(512,512) scale(0.92) translate(-512,-512)"
+     fill="none" stroke="#378FFF" stroke-width="62" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Bowl: a 300-degree arc, r=124 about (333,512). The 60-degree aperture faces due right
+         and the stem covers it; the stem's left edge is tangent to the counter. -->
+    <path d="M 440.38 450 A 124 124 0 1 0 440.38 574" />
+    <!-- The stem: crown 388 to baseline 636. Tallest vertical in the mark, never animates. -->
+    <path d="M 457 388 L 457 636" />
+    <!-- Meter: three short bars on the letter's baseline, none reaching the crown. -->
+    <path d="M 579 540 L 579 636" />
+    <path d="M 697 490 L 697 636" />
+    <path d="M 815 445 L 815 636" />
+  </g>
+</svg>

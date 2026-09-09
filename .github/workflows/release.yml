@@ -1,0 +1,76 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    # macos-26 carries the Xcode 26 toolchain Avo is built with. If GitHub retires that image,
+    # switch this to macos-latest and drop the "Select Xcode" step below.
+    runs-on: macos-26
+    env:
+      AVO_TEAM_ID: ${{ secrets.AVO_TEAM_ID }}
+      MAC_CERT_P12: ${{ secrets.MAC_CERT_P12 }}
+      MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+      NOTARY_KEY: ${{ secrets.NOTARY_KEY }}
+      NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+      NOTARY_ISSUER: ${{ secrets.NOTARY_ISSUER }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release gate
+        # Fails the job if any personal string or the old product name is still in the tree.
+        run: scripts/check-release.sh
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.app || ls /Applications | grep Xcode
+      - name: Install xcodegen
+        run: brew install xcodegen
+      - name: Import the Developer ID certificate
+        if: env.MAC_CERT_P12 != ''
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/ci.keychain-db"
+          echo "$MAC_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p ci "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p ci "$KEYCHAIN"
+          # No -t: a .p12 holds the certificate *and* its private key, and -t cert imports only the
+          # certificate, so codesign would later fail with "no identity found". -T grants the two
+          # tools that need it access to the key without a UI prompt, which the runner cannot answer.
+          security import "$RUNNER_TEMP/cert.p12" -P "$MAC_CERT_PASSWORD" -f pkcs12 -k "$KEYCHAIN" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple: -s -k ci "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          rm -f "$RUNNER_TEMP/cert.p12"
+      - name: Write the notary key
+        if: env.NOTARY_KEY != ''
+        run: |
+          mkdir -p "$RUNNER_TEMP/private_keys"
+          printf '%s' "$NOTARY_KEY" > "$RUNNER_TEMP/private_keys/AuthKey.p8"
+          chmod 600 "$RUNNER_TEMP/private_keys/AuthKey.p8"
+      - name: Build and package
+        id: package
+        env:
+          NOTARY_KEY_PATH: ${{ runner.temp }}/private_keys/AuthKey.p8
+        run: |
+          if [ -z "$AVO_TEAM_ID" ] || [ -z "$MAC_CERT_P12" ]; then
+            echo "No signing secrets set; building unsigned."
+            NOTARY_KEY_PATH= scripts/release.sh --unsigned
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$NOTARY_KEY" ] || [ -z "$NOTARY_KEY_ID" ] || [ -z "$NOTARY_ISSUER" ]; then
+            echo "Signing, but no notary credentials; skipping notarization."
+            NOTARY_KEY_PATH= scripts/release.sh --skip-notarize
+            echo "signed=signed-only" >> "$GITHUB_OUTPUT"
+          else
+            scripts/release.sh
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          body: >-
+            ${{ steps.package.outputs.signed == 'true'
+              && 'Signed with Developer ID and notarized by Apple.'
+              || (steps.package.outputs.signed == 'signed-only'
+                && 'Signed with Developer ID but not notarized: right-click the app and choose Open on first launch.'
+                || 'Unsigned build: right-click the app and choose Open on first launch, and allow it in System Settings > Privacy & Security if macOS blocks it.') }}

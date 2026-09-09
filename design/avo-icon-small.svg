@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Avo">
+  <title>Avo, 16 px</title>
+  <!-- Simplified artwork for the 16 px slot only. Same mark - an "a" and three short bars that
+       never reach its crown - redrawn on the 16 px pixel grid: at 64 units to the pixel every
+       edge below lands on a pixel boundary, so the 1 px strokes and the 1 px gaps stay separate
+       instead of smearing. The master artwork is used at every other size. Deliberate
+       differences from the master:
+         - tile 13 px (px 1 to 14) instead of 12.9, so its edges are whole pixels
+         - stroke 64 (exactly 1 px) instead of the master's scaled 57
+         - the bowl is centred on a half pixel with r = 2 px, so its 5 px outer edge AND its
+           3 px counter both land on pixel boundaries; a whole-pixel centre gives one or the
+           other, never both, and the counter is what makes it a letter rather than a blob
+         - bar pitch 2 px, so every bar has a clear pixel of tile beside it
+         - the meter is 1 / 2 / 3 px of ink against the stem's 5: the rise is stated in whole
+           pixels, and the tallest bar still stops 2 px short of the crown
+         - no hairline edge: at 13 px it would be a half-pixel smudge -->
+  <defs>
+    <radialGradient id="tint" cx="0.30" cy="0.24" r="0.82">
+      <stop offset="0" stop-color="#378FFF" stop-opacity="0.08" />
+      <stop offset="0.55" stop-color="#378FFF" stop-opacity="0.03" />
+      <stop offset="1" stop-color="#378FFF" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect x="64" y="64" width="832" height="832" rx="187" ry="187" fill="#0B0D12" />
+  <rect x="64" y="64" width="832" height="832" rx="187" ry="187" fill="url(#tint)" />
+  <g fill="none" stroke="#378FFF" stroke-width="64" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Bowl r=128 about (288,480) - px 4.5, 7.5. Outer edges px 2 and 7, counter px 3 to 6. -->
+    <path d="M 398.85 416 A 128 128 0 1 0 398.85 544" />
+    <!-- Stem, tangent to the counter, px 5 to 10 of ink. -->
+    <path d="M 416 352 L 416 608" />
+    <!-- Meter: 1, 2 and 3 px of ink on the stem's baseline. The first is a single round cap. -->
+    <path d="M 544 608 L 544 608" />
+    <path d="M 672 544 L 672 608" />
+    <path d="M 800 480 L 800 608" />
+  </g>
+</svg>

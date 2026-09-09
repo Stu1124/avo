@@ -1,0 +1,23 @@
+# Merged into project.yml when AVO_RELEASE=true. scripts/release.sh exports that before
+# `xcodegen generate` for its signed modes; nothing else sets it.
+#
+# Why this file exists at all: these are the settings a Developer ID archive needs, and they must
+# reach the Avo target *only*. Passing DEVELOPMENT_TEAM / CODE_SIGN_STYLE / ENABLE_HARDENED_RUNTIME
+# on the xcodebuild command line makes them global to the build, so they also land on the SwiftMath
+# package target, which has no team and no matching identity and then fails to sign — the same
+# hazard scripts/install.sh hit with CODE_SIGN_IDENTITY. Scoping them here keeps the command line
+# free of signing settings entirely.
+#
+# The identity is not here: project.yml already maps AVO_CODE_SIGN_IDENTITY onto the target's
+# CODE_SIGN_IDENTITY, and an included file loses to the file that includes it, so a value here would
+# be ignored. scripts/release.sh exports AVO_CODE_SIGN_IDENTITY="Developer ID Application" instead.
+#
+# Automatic signing lets Xcode resolve the "Developer ID Application" certificate for the team, and
+# the hardened runtime is mandatory for notarization. Day-to-day builds keep ENABLE_HARDENED_RUNTIME
+# off (see project.yml) because it costs debugger attachment for nothing.
+targets:
+  Avo:
+    settings:
+      base:
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES

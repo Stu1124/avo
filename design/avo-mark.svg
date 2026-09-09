@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Avo mark">
+  <title>Avo mark</title>
+  <!-- Lowercase "a" followed by a three-bar level meter. Stroke 62, round caps, 1024 grid.
+       Ink bounds x 178-846, y 357-667 (668 x 310), centred on 512,512.
+       Accent #378FFF = Theme.accent.
+       The one rule the whole drawing obeys: nothing in the meter rises as high as the
+       letter's own stem, so no bar can be mistaken for a second letter. -->
+  <g fill="none" stroke="#378FFF" stroke-width="62" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Bowl: a 300-degree arc, r=124 about (333,512). The 60-degree aperture faces due right
+         and the stem covers it; the stem's left edge is tangent to the counter, so the counter
+         closes as a clean circle - no G spur, no wedge. -->
+    <path d="M 440.38 450 A 124 124 0 1 0 440.38 574" />
+    <!-- The stem: crown 388 to baseline 636, exactly the bowl's height. It is the tallest
+         vertical in the mark and it never animates. -->
+    <path d="M 457 388 L 457 636" />
+    <!-- Meter: three short bars on the letter's baseline, 96 / 146 / 191 long against the
+         stem's 248. The tallest tops out at 445, still 57 short of the crown at 388.
+         Centre pitch 118 leaves a gap of 56 - just under one stroke width - between bars,
+         which is the tightest spacing that still resolves at 32 px. A literal pitch of one
+         stroke width (62) would fuse them into a single block. -->
+    <path d="M 579 540 L 579 636" />
+    <path d="M 697 490 L 697 636" />
+    <path d="M 815 445 L 815 636" />
+  </g>
+</svg>

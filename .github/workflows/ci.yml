@@ -1,0 +1,33 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  build-and-test:
+    # macos-26 carries the Xcode 26 toolchain Avo is built with. If GitHub retires that image,
+    # switch this to macos-latest and drop the "Select Xcode" step below.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release gate
+        # Fails the job if any personal string or the old product name is still in the tree.
+        run: scripts/check-release.sh
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.app || ls /Applications | grep Xcode
+      - name: Install xcodegen
+        run: brew install xcodegen
+      - name: Unit tests
+        run: scripts/test.sh
+      - name: Build
+        # `shell: bash` runs the block with -eo pipefail. The default shell has no pipefail, so a
+        # failing xcodebuild piped into grep would exit 0 and the step would pass on a broken build.
+        # The pipeline below is deliberately tolerant (grep exits 1 when a clean build prints no
+        # 'error:' line); the authoritative gate is the BUILD SUCCEEDED check against the full log.
+        shell: bash
+        run: |
+          xcodegen generate
+          xcodebuild -project Avo.xcodeproj -scheme Avo -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO build 2>&1 \
+            | tee "$RUNNER_TEMP/build.log" | grep -E 'error:|BUILD' || true
+          grep -q 'BUILD SUCCEEDED' "$RUNNER_TEMP/build.log"

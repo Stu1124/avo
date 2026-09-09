@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Avo</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIconFile</key>
+	<string>Avo</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Avo</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.avo.mac</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>avo</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>15.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Avo sends iMessages and controls apps for you.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Avo reads your calendars.</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSLocationUsageDescription</key>
+	<string>Avo uses your location for nearby requests.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Avo uses your location for nearby requests.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Avo listens while you hold your talk key.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Avo reads and creates your reminders.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Avo transcribes your voice on this Mac.</string>
+</dict>
+</plist>
