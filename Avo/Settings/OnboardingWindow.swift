@@ -315,16 +315,16 @@ struct OnboardingView: View {
     // MARK: 4 · Try it
 
     private var tryItStep: some View {
-        page("Try it.", "Hold \(settings.talkKeyLabel) and say “what time is it”.") {
+        page("Try it.", "Hold \(settings.talkKeyLabel) and say “what's the latest Apple news”.") {
             panel {
                 VStack(alignment: .leading, spacing: DS.Space.m) {
                     HStack(spacing: DS.Space.s) {
                         talkKeyCap
                         Text("hold and say").font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3)
                         Spacer(minLength: DS.Space.s)
-                        DSPill("Type it instead", icon: "keyboard") { run("what time is it") }
+                        DSPill("Type it instead", icon: "keyboard") { run("What's the latest Apple news?") }
                     }
-                    Text("“what time is it”").font(DS.font(DS.Size.lead, .medium)).foregroundStyle(Theme.ink)
+                    Text("“what's the latest Apple news”").font(DS.font(DS.Size.lead, .medium)).foregroundStyle(Theme.ink)
                 }
             }
         }

@@ -2,7 +2,7 @@
 
 ## 1.0.0 — 2026-09-09
 
-First public release; formerly Halo.
+First public release. Formerly Halo.
 
 - Hold-to-talk voice agent in the notch. Dictation and wake-word detection run on-device.
 - Bring your own model: OpenAI, or any OpenAI-compatible server (Ollama, LM Studio, OpenRouter,

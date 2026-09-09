@@ -175,7 +175,7 @@ enum PermissionGate {
             id: id,
             icon: kind.icon,
             title: "Avo needs \(phrase(kind)) to do that.",
-            body: "\(kind.detail) Nothing happens until you allow it.",
+            body: "\(kind.detail) Grant it in System Settings, then ask again.",
             options: ["Open Settings", "Not now"],
             allowFreeText: false,
             onAnswer: { answer in

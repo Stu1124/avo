@@ -57,7 +57,7 @@ targets:
         NSSpeechRecognitionUsageDescription: Avo transcribes your voice on this Mac.
         NSRemindersFullAccessUsageDescription: Avo reads and creates your reminders.
         NSCalendarsFullAccessUsageDescription: Avo reads your calendars.
-        NSAppleEventsUsageDescription: Avo sends iMessages and controls apps for you.
+        NSAppleEventsUsageDescription: Avo sends iMessages and controls other apps at your request.
         NSLocationUsageDescription: Avo uses your location for nearby requests.
         NSLocationWhenInUseUsageDescription: Avo uses your location for nearby requests.
         CFBundleURLTypes:

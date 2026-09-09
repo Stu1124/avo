@@ -40,7 +40,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Avo sends iMessages and controls apps for you.</string>
+	<string>Avo sends iMessages and controls other apps at your request.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Avo reads your calendars.</string>
 	<key>NSHighResolutionCapable</key>

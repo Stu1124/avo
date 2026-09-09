@@ -206,10 +206,7 @@ final class AgentRuntime {
             // it flipped the *new* listen to the done state, chimed, and armed a collapse timer.
             if Task.isCancelled { Log.info("Turn cancelled"); return }
             if let c = searchChip { notch.finishStatus(c, ok: failed == nil) }
-            if !citations.isEmpty {
-                let rows = citations.prefix(5).map { GlanceCard.Row(title: $0.0.isEmpty ? $0.1 : $0.0, subtitle: URL(string: $0.1)?.host, icon: "globe", url: $0.1) }
-                notch.present(.glance(GlanceCard(id: UUID(), blocks: [.list(rows: rows)], source: "Sources", sourceIcon: "globe")))
-            }
+            presentSources(citations)
             if let f = failed { lastTurnEnded = Date(); notch.fail(friendly(f)); History.shared.record(role: "assistant", text: "Error: \(f)", chat: chatId); return }
             if !text.isEmpty {
                 conversation.append(["role": "assistant", "content": [["type": "output_text", "text": text]]])
@@ -239,6 +236,9 @@ final class AgentRuntime {
                     }
                 }
                 for c in result.cards { notch.present(c) }
+                // The web_search tool's results are sources behind the answer, exactly like the
+                // url_citation annotations the hosted search sends, and get the same card.
+                if call.name == "web_search" { presentSources(Self.sources(in: result.json)) }
                 if case .cancelled = result.outcome { notch.clearResponse(); Speech.shared.stop() }
                 if let n = result.narration { quickNarrations.append(n) } else { allQuick = false }
             }
@@ -258,6 +258,26 @@ final class AgentRuntime {
         Log.info("Turn done: \(narration.prefix(160))")
         if !narration.isEmpty { History.shared.record(role: "assistant", text: narration, chat: chatId) }
         notch.done(autoCollapseAfter: notch.model.cards.isEmpty ? 7 : 14)
+    }
+
+    /// One card listing what an answer was drawn from. Both routes to the web end here — the hosted
+    /// search's `url_citation` annotations, and the `web_search` tool's own results — so a provider
+    /// with no built-in search shows the user the same thing OpenAI's does.
+    private func presentSources(_ sources: [(String, String)]) {
+        guard !sources.isEmpty else { return }
+        let rows = sources.prefix(5).map {
+            GlanceCard.Row(title: $0.0.isEmpty ? $0.1 : $0.0, subtitle: URL(string: $0.1)?.host, icon: "globe", url: $0.1)
+        }
+        notch.present(.glance(GlanceCard(id: UUID(), blocks: [.list(rows: rows)], source: "Sources", sourceIcon: "globe")))
+    }
+
+    /// `web_search` output as (title, url) pairs. A failed search has no results and shows no card.
+    private static func sources(in json: [String: Any]) -> [(String, String)] {
+        guard json["ok"] as? Bool == true, let rows = json["results"] as? [[String: Any]] else { return [] }
+        return rows.compactMap { row in
+            guard let url = row["url"] as? String, !url.isEmpty else { return nil }
+            return (row["title"] as? String ?? url, url)
+        }
     }
 
     /// Drops `input_image` parts from a stored user message; text and tool traffic stay.

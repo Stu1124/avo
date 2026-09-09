@@ -52,6 +52,15 @@ final class Sounds: @unchecked Sendable {
         }
     }
 
+    private var configObserver: NSObjectProtocol?
+
+    private func observeConfiguration() {
+        guard configObserver == nil else { return }
+        configObserver = NotificationCenter.default.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: nil) { [weak self] _ in
+            self?.queue.async { [weak self] in self?.configurationChanged() }
+        }
+    }
+
     @MainActor
     func play(_ cue: Cue) {
         guard Settings.shared.soundsEnabled else { return }
@@ -60,6 +69,7 @@ final class Sounds: @unchecked Sendable {
 
     private func playNow(_ cue: Cue) {
         guard ensureGraph() else { return }
+        observeConfiguration()
         if !engine.isRunning {
             engine.prepare()
             do {
@@ -76,7 +86,25 @@ final class Sounds: @unchecked Sendable {
             guard let self else { return }
             self.queue.async { [weak self] in self?.bufferFinished() }
         }
+        // The engine can be stopped between the start above and this call: a configuration change
+        // (a new input device, the dictation engine warming up) resets it on another thread, and
+        // AVAudioPlayerNode.play() raises an uncatchable NSException when its engine is not running.
+        // Re-check right before starting the node, and restart once if needed.
+        if !engine.isRunning {
+            engine.prepare()
+            do { try engine.start() } catch {
+                Log.warn("Sounds: output restart failed (\(error.localizedDescription))"); return
+            }
+        }
+        guard engine.isRunning else { return }
         if !player.isPlaying { player.play() }
+    }
+
+    /// The output graph was reset underneath us. Drop what is queued so the next cue starts clean.
+    private func configurationChanged() {
+        scheduledBuffers = 0
+        player.stop()
+        engine.stop()
     }
 
     private func bufferFinished() {

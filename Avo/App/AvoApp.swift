@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @main
@@ -38,6 +39,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// then wait here and run once the app is actually able to serve them.
     private var launchComplete = false
     private var pendingURLs: [URL] = []
+    /// Watches the two settings that decide which web tools belong in the registry.
+    private var providerWatch: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Log.info("Avo launching")
@@ -162,7 +165,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         r.register(CodingTools.all())
         r.register(NotesTools.all())
         r.register(SchedulingTools.all())
+        r.register(WebTools.all())
         Log.info("Registered \(r.all.count) tools")
+        // The Web set depends on the provider: hosted search on OpenAI's Responses style, our own elsewhere.
+        providerWatch = Settings.shared.$apiStyle.combineLatest(Settings.shared.$apiBaseURL)
+            .dropFirst().debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .sink { _, _ in WebTools.reregister() }
         Task { ToolRegistry.shared.register(await MCPTools.all()); Log.info("Registered \(ToolRegistry.shared.all.count) tools incl. MCP") }
     }
 

@@ -44,7 +44,7 @@ enum DebugVerification {
         r.register(GoogleTools.all())
         r.register(CodingTools.all())
         r.register(NotesTools.all())
-        r.register(SchedulingTools.all())
+        r.register(SchedulingTools.all() + WebTools.all())
         Log.info("Registered \(r.all.count) tools")
         NotchController.shared.install()
         let watchdog = Task {
@@ -270,7 +270,7 @@ enum DebugVerification {
             var view = OnboardingView(permissions: PermissionsModel(), settings: Settings.shared,
                                       preview: VoicePreview.shared, notch: NotchController.shared.model, onFinish: {})
             view.debugInitialStep = step
-            await renderToPNG(AnyView(view), width: 660, height: 560, pad: 0, path: "/tmp/avo-ui/onboarding-\(step).png")
+            await renderToPNG(AnyView(view), width: OnboardingWindow.size.width, height: OnboardingWindow.size.height, pad: 0, path: "/tmp/avo-ui/onboarding-\(step).png")
         }
         print("PASS: rendered 6 onboarding steps")
     }

@@ -112,7 +112,7 @@ struct SideNotchPanelBody: View {
         if model.working.isEmpty && model.done.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Nothing running.").font(Theme.text(13, .medium)).foregroundStyle(Theme.ink2)
-                Text("Say “have Claude…” or “have Codex…” to start a task. It shows here while it works and when it finishes.")
+                Text("Say “have Claude…” or “have Codex…” to start a task. Tasks show here while they run and after they finish.")
                     .font(Theme.text(12)).foregroundStyle(Theme.ink3).fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 4).padding(.top, 6)
