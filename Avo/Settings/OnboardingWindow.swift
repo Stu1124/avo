@@ -1,8 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// First-run flow: Welcome → Brain → Access → Try it → Extras → Ready. 1000×640, two panes:
-/// the step on the left, a live stage showing what the step is about on the right.
+/// First-run flow: Welcome → Brain → Access → Try it → Extras → Ready. 1000×640, two panes: one
+/// idea on the left, one thing to look at on the right. Every step is a label, a title, a sentence
+/// and a single card — nothing else earns the space.
 @MainActor
 final class OnboardingWindow {
     static let shared = OnboardingWindow()
@@ -18,14 +19,13 @@ final class OnboardingWindow {
                 self?.finish()
             }
             #if DEBUG
-            // Verification seam: `defaults write app.avo.mac onboardingDebugStep -int 3` opens on that
-            // step, so a screenshot of any step can be taken without clicking through the flow.
+            // Verification seam: `defaults write app.avo.mac onboardingDebugStep -int 3` opens on that step.
             root.debugInitialStep = UserDefaults.standard.integer(forKey: "onboardingDebugStep")
             #endif
             let w = DarkWindow.make(title: "Welcome to Avo", size: Self.size, content: root)
             w.level = .floating
-            // The flow paints its own ground (see `OnboardingBackground`), so the window's corner has
-            // to be the one the design asks for rather than the system's default for a titled window.
+            // The flow paints its own ground, so the window's corner has to be the one the design
+            // asks for rather than the system's default for a titled window.
             if let content = w.contentView {
                 content.wantsLayer = true
                 content.layer?.cornerRadius = 22
@@ -68,7 +68,7 @@ struct OnboardingView: View {
 
     enum Step: Int, CaseIterable {
         case welcome, brain, permissions, tryIt, extras, ready
-        /// Small-caps eyebrow above the title, and the word beside the progress bar.
+        /// Small-caps eyebrow under the progress bar.
         var label: String {
             switch self {
             case .welcome: return "Welcome"
@@ -81,8 +81,10 @@ struct OnboardingView: View {
         }
     }
 
-    /// The left pane is 46% of a 1000 pt window; the stage takes the rest.
+    /// The left pane is 46% of a 1000 pt window; the stage takes the rest. The margin is wide on
+    /// purpose — the whitespace is the design.
     private static let leftWidth: CGFloat = 460
+    private static let pad: CGFloat = 44
     /// Content travels 12 pt and fades on one unhurried, critically damped spring.
     private static let stepSpring = Animation.spring(response: 0.45, dampingFraction: 0.95)
 
@@ -103,8 +105,7 @@ struct OnboardingView: View {
     private var steps: Int { Step.allCases.count }
     private var current: Step { Step(rawValue: step) ?? .welcome }
 
-    /// Enter and exit run along the same axis, so Back retraces the path Continue took. Reduce Motion
-    /// keeps the change legible without the travel.
+    /// Enter and exit run along the same axis, so Back retraces the path Continue took.
     private var transition: AnyTransition {
         if reduceMotion { return .opacity }
         let d: CGFloat = forward ? 12 : -12
@@ -114,22 +115,20 @@ struct OnboardingView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            // The pane takes the window's full height whatever the step's content measures, so the
-            // progress bar and the footer sit at the same y on every step.
+            // The pane takes the window's full height whatever the step measures, so the progress
+            // bar and the footer sit at the same y on every step.
             leftPane.frame(width: Self.leftWidth).frame(maxHeight: .infinity)
             OnboardingStage(step: current, settings: settings, permissions: permissions,
-                            notch: notch, preview: preview, googleEmail: googleEmail,
-                            keyVerified: keyVerified, run: run)
-                .padding(.leading, 6)
-                .padding(.trailing, 28)
-                .padding(.vertical, 28)
+                            notch: notch, googleEmail: googleEmail, keyVerified: keyVerified, run: run)
+                .padding(.trailing, 36)
+                .padding(.vertical, 36)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(OnboardingBackground())
         .onAppear {
             // Reads the Keychain on the main actor. Safe here and only here: onboarding has a visible
-            // window by definition, so if a legacy item's access prompt does appear the user can answer it.
-            // The rule this does not break is the launch path — see Settings.bootstrapSecretsFromDisk.
+            // window by definition, so a legacy item's access prompt can be answered. The rule this
+            // does not break is the launch path — see Settings.bootstrapSecretsFromDisk.
             googleEmail = GoogleAuth.shared.isConnected ? GoogleAuth.shared.email : nil
             #if DEBUG
             if step == 0, debugInitialStep != 0 { step = debugInitialStep }
@@ -140,7 +139,10 @@ struct OnboardingView: View {
 
     private var leftPane: some View {
         VStack(alignment: .leading, spacing: 0) {
-            progress
+            SegmentedProgress(count: steps, index: step)
+            Text(current.label.uppercased())
+                .font(DS.font(DS.Size.label, .semibold)).tracking(1.1).foregroundStyle(Theme.accent)
+                .padding(.top, DS.Space.m)
             ZStack(alignment: .topLeading) {
                 Group {
                     switch current {
@@ -155,13 +157,14 @@ struct OnboardingView: View {
                 .id(step)
                 .transition(transition)
             }
+            .padding(.top, DS.Space.xl)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .clipped()
             footer
         }
-        .padding(.horizontal, 38)
-        .padding(.top, 30)
-        .padding(.bottom, 26)
+        .padding(.horizontal, Self.pad)
+        .padding(.top, 40)
+        .padding(.bottom, 36)
     }
 
     private func go(_ delta: Int) {
@@ -175,8 +178,8 @@ struct OnboardingView: View {
 
     /// SwiftUI can only hand focus to a field once the window is key and the step's view exists, so
     /// land the caret after the transition. The step is read again inside the closure: 0.35 s is
-    /// long enough for Back, ⌘↩ or a second click to have moved on, and focusing a field that is no
-    /// longer on screen would take focus away from whatever is.
+    /// long enough for Back or ⌘↩ to have moved on, and focusing a field that is no longer on screen
+    /// would take focus away from whatever is.
     private func focusBrainField() {
         guard current == .brain else { baseURLFocused = false; return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
@@ -185,28 +188,14 @@ struct OnboardingView: View {
         }
     }
 
-    // MARK: Progress and footer
-
-    private var progress: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SegmentedProgress(count: steps, index: step)
-            HStack(spacing: 0) {
-                Text(current.label.uppercased())
-                    .font(DS.font(DS.Size.label, .semibold)).tracking(1.1).foregroundStyle(Theme.accent)
-                Spacer(minLength: DS.Space.s)
-                Text("\(step + 1) / \(steps)")
-                    .font(DS.font(DS.Size.label, .medium)).tracking(0.6).foregroundStyle(Theme.ink3)
-            }
-        }
-        .padding(.bottom, 26)
-    }
+    // MARK: Footer
 
     /// Microphone and Speech Recognition are the two the hold-to-talk loop cannot work without;
     /// Input Monitoring and Accessibility can be granted later.
     private var canLeavePermissions: Bool {
         permissions.status[.microphone] == .granted && permissions.status[.speechRecognition] == .granted
     }
-
+    private var blocked: Bool { current == .permissions && !canLeavePermissions }
     private var primaryLabel: String {
         switch current {
         case .welcome: return "Get started"
@@ -215,37 +204,21 @@ struct OnboardingView: View {
         }
     }
 
-    private var blocked: Bool { current == .permissions && !canLeavePermissions }
-
     private var footer: some View {
         HStack(spacing: DS.Space.s) {
-            if step > 0 {
-                KeyCap(text: "⌘ ←").opacity(0.55)
-                BigButton(label: "Back", style: .ghost) { go(-1) }
-            }
+            if step > 0 { BigButton(label: "Back", style: .ghost) { go(-1) } }
             Spacer(minLength: DS.Space.s)
-            if current == .extras, googleEmail == nil {
-                // Both extras are optional, so say so — quietly. A second pill next to Continue read
-                // as a second primary action that did the same thing.
-                Button { go(1) } label: {
-                    Text("Skip").font(DS.font(DS.Size.caption, .medium)).foregroundStyle(Theme.ink3)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            KeyCap(text: "⌘ ↩").opacity(blocked ? 0.25 : 0.55)
+            KeyCap(text: "⌘ ↩").opacity(blocked ? 0.25 : 0.5)
             BigButton(label: primaryLabel) { advance() }
                 .disabled(blocked)
                 .opacity(blocked ? 0.45 : 1)
                 .keyboardShortcut(.return, modifiers: .command)
                 .animation(Theme.springQuick, value: blocked)
         }
-        .padding(.top, DS.Space.l)
-        .background(alignment: .top) {
-            Rectangle().fill(Theme.line).frame(height: 1)
-        }
+        .padding(.top, DS.Space.xl)
+        .background(alignment: .top) { Rectangle().fill(Theme.line).frame(height: 1) }
         .background {
-            // ↩ commits and ⌘← goes back, without either glyph taking a second visible button.
+            // ↩ commits and ⌘← goes back, without either taking a visible place in the footer.
             Group {
                 Button("") { advance() }.keyboardShortcut(.return, modifiers: []).disabled(blocked)
                 Button("") { go(-1) }.keyboardShortcut(.leftArrow, modifiers: .command).disabled(step == 0)
@@ -258,35 +231,26 @@ struct OnboardingView: View {
 
     // MARK: Shared bits
 
-    /// Large text takes negative tracking and tight leading; the body sits near zero.
-    private func titleBlock(_ title: String, _ subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(DS.font(DS.Size.hero, .semibold)).foregroundStyle(Theme.ink).tracking(-1.2)
-                .lineSpacing(-2)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(subtitle).font(DS.font(DS.Size.lead)).foregroundStyle(Theme.ink2).lineSpacing(5)
-                .fixedSize(horizontal: false, vertical: true)
+    /// Title, one sentence, one card. This is the only layout any step gets. Large text takes
+    /// negative tracking and tight leading; the body sits near zero.
+    private func page<C: View>(_ title: String, _ subtitle: String, @ViewBuilder _ card: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: DS.Space.m) {
+                Text(title).font(DS.font(DS.Size.hero, .semibold)).foregroundStyle(Theme.ink)
+                    .tracking(-1.2).lineSpacing(-2).fixedSize(horizontal: false, vertical: true)
+                Text(subtitle).font(DS.font(DS.Size.lead)).foregroundStyle(Theme.ink2).lineSpacing(5)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            card()
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func page<C: View>(@ViewBuilder _ content: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: DS.Space.l) { content() }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     /// A single-block card, for steps whose content is not a list of rows. Same surface as
     /// `SectionCard`, which is where `cardChrome` is defined.
     private func panel<C: View>(@ViewBuilder _ content: () -> C) -> some View {
-        content()
-            .padding(DS.Space.l)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .cardChrome()
-    }
-
-    private func footnote(_ text: String) -> some View {
-        Text(text).font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3).lineSpacing(2)
-            .fixedSize(horizontal: false, vertical: true)
+        content().padding(DS.Space.l).frame(maxWidth: .infinity, alignment: .leading).cardChrome()
     }
 
     private var talkKeyCap: some View {
@@ -296,41 +260,31 @@ struct OnboardingView: View {
     // MARK: 1 · Welcome
 
     private var welcome: some View {
-        page {
-            titleBlock("Hold \(settings.talkKeyLabel). Say it. Done.",
-                       "Avo listens while you hold the key, looks at your screen when the question needs it, and does the work in your own apps — Messages, Reminders, Finder, Calendar, your browser.")
+        page("Hold. Speak. Done.",
+             "Hold \(settings.talkKeyLabel) anywhere, say what you want, and Avo does it.") {
             panel {
-                VStack(alignment: .leading, spacing: DS.Space.m) {
-                    HStack(spacing: DS.Space.s) {
-                        talkKeyCap
-                        Text("or").font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3)
-                        KeyCap(text: "⌃ ⌥")
-                        Text("hold to talk, tap to type")
-                            .font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3)
-                            .padding(.leading, DS.Space.xs)
-                    }
-                    Rectangle().fill(Theme.line).frame(height: 1)
-                    footnote("Your speech is transcribed on this Mac. What leaves it is the text of your request, and a screenshot when the request is about your screen, sent to the model provider you pick next. Avo has no account and no server of its own.")
+                HStack(spacing: DS.Space.s) {
+                    talkKeyCap
+                    Text("or").font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3)
+                    KeyCap(text: "⌃ ⌥")
+                    Text("hold to talk, tap to type")
+                        .font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3)
+                        .padding(.leading, DS.Space.xs)
                 }
             }
-            Spacer(minLength: 0)
         }
     }
 
     // MARK: 2 · Brain
 
     private var brainStep: some View {
-        page {
-            titleBlock("Pick a brain.",
-                       "Avo needs a language model: OpenAI with a key, or any OpenAI-compatible server.")
+        page("Pick a brain.", "OpenAI with a key, or any OpenAI-compatible server.") {
             SectionCard {
                 PickerRow(title: "Provider", selection: styleBinding, options: GeneralPage.styleOptions)
-                TextRow(title: "Base URL", placeholder: "https://api.openai.com/v1", text: $settings.apiBaseURL, width: 190, focused: $baseURLFocused)
+                TextRow(title: "Base URL", placeholder: "https://api.openai.com/v1", text: $settings.apiBaseURL, width: 176, focused: $baseURLFocused)
                 KeyField(provider: .openAI) { ok in withAnimation(Theme.springQuick) { keyVerified = ok } }
-                TextRow(title: "Model", placeholder: "model id", text: $settings.brainModel, width: 190)
+                TextRow(title: "Model", placeholder: "model id", text: $settings.brainModel, width: 176)
             }
-            footnote("Test sends one authenticated request to that base URL. All of this is changeable later in Settings → General.")
-            Spacer(minLength: 0)
         }
     }
 
@@ -342,49 +296,37 @@ struct OnboardingView: View {
     // MARK: 3 · Access
 
     private var permissionsStep: some View {
-        page {
-            titleBlock("Four permissions.",
-                       "These are the ones the hold-to-talk loop needs. macOS asks once, and the tiles fill in as you answer.")
-            VStack(spacing: 0) {
-                ForEach(Array(PermissionKind.upFront.enumerated()), id: \.element.id) { i, k in
-                    if i > 0 { Rectangle().fill(Theme.line).frame(height: 1).padding(.leading, 50) }
-                    OnboardingPermissionRow(kind: k, model: permissions)
+        page("Four permissions.", "Microphone and Speech Recognition are required — macOS asks once.") {
+            VStack(alignment: .leading, spacing: DS.Space.m) {
+                VStack(spacing: 0) {
+                    ForEach(Array(PermissionKind.upFront.enumerated()), id: \.element.id) { i, k in
+                        if i > 0 { Rectangle().fill(Theme.line).frame(height: 1).padding(.leading, 50) }
+                        OnboardingPermissionRow(kind: k, model: permissions)
+                    }
                 }
+                .cardChrome()
+                Text("Everything else is asked later, the first time something needs it.")
+                    .font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .cardChrome()
-            HStack(alignment: .top, spacing: 7) {
-                StatusDot(state: canLeavePermissions ? .ok : .warn).padding(.top, 3)
-                footnote(canLeavePermissions
-                         ? "Ready to listen. Input Monitoring and Accessibility can be granted whenever you like — Avo asks again the first time it needs them."
-                         : "Microphone and Speech Recognition are needed to go on. The other two can wait: grant them here or later in Settings → Permissions.")
-            }
-            Spacer(minLength: 0)
         }
     }
 
     // MARK: 4 · Try it
 
     private var tryItStep: some View {
-        page {
-            titleBlock("Say something.",
-                       "Hold \(settings.talkKeyLabel) and say “what time is it”. Let go when you're done — the reply lands in the notch, and on the stage beside this.")
+        page("Say something.", "Hold \(settings.talkKeyLabel) and say “what time is it”.") {
             panel {
                 VStack(alignment: .leading, spacing: DS.Space.m) {
                     HStack(spacing: DS.Space.s) {
                         talkKeyCap
                         Text("hold and say").font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3)
-                    }
-                    Text("“what time is it”")
-                        .font(DS.font(DS.Size.lead, .medium)).foregroundStyle(Theme.ink)
-                    Rectangle().fill(Theme.line).frame(height: 1)
-                    HStack(spacing: DS.Space.s) {
-                        Text("No microphone yet?").font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3)
                         Spacer(minLength: DS.Space.s)
                         DSPill("Type it instead", icon: "keyboard") { run("what time is it") }
                     }
+                    Text("“what time is it”").font(DS.font(DS.Size.lead, .medium)).foregroundStyle(Theme.ink)
                 }
             }
-            Spacer(minLength: 0)
         }
     }
 
@@ -398,9 +340,7 @@ struct OnboardingView: View {
     // MARK: 5 · Extras
 
     private var extrasStep: some View {
-        page {
-            titleBlock("Two extras.",
-                       "Both optional, both changeable later. Skip straight past if you'd rather not decide now.")
+        page("Two extras.", "Both optional, both changeable later in Settings.") {
             SectionCard(footer: googleError) {
                 ActionRow(title: googleEmail ?? "Google", subtitle: googleEmail == nil ? "Gmail, Calendar and Drive" : "Connected", icon: "globe") {
                     if googleEmail == nil {
@@ -416,8 +356,6 @@ struct OnboardingView: View {
                     }
                 }
             }
-            if let message = preview.message { footnote(message) }
-            Spacer(minLength: 0)
         }
     }
 
@@ -439,27 +377,13 @@ struct OnboardingView: View {
     // MARK: 6 · Ready
 
     private var ready: some View {
-        page {
-            titleBlock("You're set.",
-                       "Avo lives in your menu bar and under the notch. Hold \(settings.talkKeyLabel) whenever you want to speak — in any app, without switching to anything.")
+        page("You're set.", "Avo lives in your menu bar and under the notch.") {
             VStack(spacing: 0) {
                 whereRow("menubar.rectangle", "Menu bar", "Status, history and Settings.")
                 Rectangle().fill(Theme.line).frame(height: 1).padding(.leading, 50)
-                whereRow("rectangle.topthird.inset.filled", "The notch", "Where the reply and every confirmation card land.")
-                Rectangle().fill(Theme.line).frame(height: 1).padding(.leading, 50)
-                whereRow("clock.arrow.circlepath", "History", "Every request is kept on this Mac. Open it from the menu bar.")
+                whereRow("rectangle.topthird.inset.filled", "The notch", "Where every reply lands.")
             }
             .cardChrome()
-            Button { SettingsWindow.shared.show() } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "gearshape").font(.system(size: 11, weight: .semibold))
-                    Text("Open Settings").font(DS.font(DS.Size.body, .medium))
-                }
-                .foregroundStyle(Theme.accent)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            Spacer(minLength: 0)
         }
     }
 
@@ -473,8 +397,7 @@ struct OnboardingView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, DS.Space.l)
-        .padding(.vertical, DS.Space.m)
+        .padding(.horizontal, DS.Space.l).padding(.vertical, DS.Space.m)
     }
 }
 
@@ -497,8 +420,7 @@ struct OnboardingBackground: View {
     }
 }
 
-/// Compact permission row for the onboarding left pane. The reason each one is needed lives on the
-/// stage beside it, so this row is only name, state and the one control.
+/// Compact permission row for the onboarding left pane: name, state and the one control.
 private struct OnboardingPermissionRow: View {
     let kind: PermissionKind
     @ObservedObject var model: PermissionsModel
@@ -524,8 +446,7 @@ private struct OnboardingPermissionRow: View {
                     .frame(width: 62, alignment: .trailing)
             }
         }
-        .padding(.horizontal, DS.Space.l)
-        .padding(.vertical, 10)
+        .padding(.horizontal, DS.Space.l).padding(.vertical, 10)
         .animation(Theme.springQuick, value: st)
     }
 }

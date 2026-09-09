@@ -5,7 +5,7 @@
 Avo is the voice assistant who gets things done: hold a key, say it, done. Speech stays on-device.
 Bring your own model.
 
-<img src="docs/media/onboarding.png" width="700" alt="Avo onboarding, step one: hold fn, say it, done">
+<img src="docs/media/onboarding.jpg" width="700" alt="Avo onboarding, step one: hold fn, say it, done">
 
 *Onboarding opens on the promise; five more steps set your model, permissions and voice.*
 
