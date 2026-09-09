@@ -23,7 +23,9 @@ final class OnboardingWindow {
             root.debugInitialStep = UserDefaults.standard.integer(forKey: "onboardingDebugStep")
             #endif
             let w = DarkWindow.make(title: "Welcome to Avo", size: Self.size, content: root)
-            w.level = .floating
+            // A normal level: the flow is the key window while it is up, and system permission
+            // dialogs (which sit above normal windows, below floating panels) must show in front of it.
+            w.level = .normal
             // The flow paints its own ground, so the window's corner has to be the one the design
             // asks for rather than the system's default for a titled window.
             if let content = w.contentView {
