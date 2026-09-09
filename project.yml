@@ -1,12 +1,5 @@
 name: Avo
-# Signed builds add the data-protection keychain access group (see project-signed.yml and
-# Avo/Support/Keychain.swift). That entitlement makes Xcode demand a provisioning profile, so it is
-# an explicit opt-in — `export AVO_SIGNED=true` — and only for a team that has a provisioning profile
-# for app.avo.mac. It is never derived from AVO_TEAM_ID: a team id is not a profile, and a build that
-# claims the entitlement without one fails to sign.
 include:
-  - path: project-signed.yml
-    enable: ${AVO_SIGNED}
   # Developer ID archive settings, scoped to the Avo target. scripts/release.sh exports
   # AVO_RELEASE=true before `xcodegen generate`; see project-release.yml for why they are not
   # xcodebuild command-line settings.

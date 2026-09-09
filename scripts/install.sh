@@ -11,18 +11,10 @@
 # target only. Passing CODE_SIGN_IDENTITY directly on the command line would apply to every target
 # in the build, including the SwiftMath package, which then fails to sign and breaks the build.
 #
-# Keychains. Three build shapes, in increasing order of how little Avo bothers you:
-#   1. ad-hoc (no variables): legacy keychain. Every rebuild has a new code signature, so the first
-#      read after a rebuild raises a Keychain access prompt.
-#   2. AVO_TEAM_ID + AVO_CODE_SIGN_IDENTITY: still the legacy keychain, but the signing identity is
-#      stable, so the items stay trusted across rebuilds and the prompt does not come back.
-#   3. AVO_SIGNED=true, on top of 2: adds the data-protection keychain access group
-#      ($(AppIdentifierPrefix)app.avo.mac), which grants access by team prefix rather than by binary.
-# Set AVO_SIGNED=true *only* if your team has a provisioning profile for app.avo.mac (a Mac App
-# Development or Developer ID profile Xcode can resolve). The entitlement requires one, and without
-# it the build fails with "entitlements that require signing with a development certificate". It is
-# never derived from AVO_TEAM_ID or AVO_CODE_SIGN_IDENTITY — having a team id is not having a profile.
-#   export AVO_SIGNED=true
+# Keychain. Secrets live in the login keychain, whose items are tied to the exact binary that wrote
+# them. An ad-hoc build (no variables set) gets a new signature every time, so the first read after a
+# rebuild raises a Keychain access prompt. Setting AVO_TEAM_ID + AVO_CODE_SIGN_IDENTITY gives the app
+# a stable identity, so the items stay trusted across rebuilds and the prompt does not come back.
 set -e
 cd "$(dirname "$0")/.."
 xcodegen generate >/dev/null
