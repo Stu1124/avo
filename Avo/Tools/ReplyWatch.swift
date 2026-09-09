@@ -133,6 +133,9 @@ final class ReplyWatch {
         expireStale()
         let targets = watches.filter { $0.isActive && $0.kind == "imessage" }
         guard !targets.isEmpty else { armTimers(); return }
+        // Nothing to poll until Full Disk Access is granted. The timer stays armed so the first poll
+        // after the grant picks the watches up, and the skip itself is silent.
+        guard MessagesStore.accessGranted() else { return }
         pollingIMessage = true
         Task.detached(priority: .utility) { [targets] in
             var found: [(String, Int64?, String, String)] = []   // watch id, chat row, sender name, text

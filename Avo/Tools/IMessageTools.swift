@@ -178,7 +178,29 @@ final class MessagesStore: @unchecked Sendable {
         var chatName: String?
     }
 
+    /// Whether chat.db is readable at all.
+    ///
+    /// Before the user grants Full Disk Access every read here is bound to fail, and that is an
+    /// expected state on a fresh install, not an error. It is noted once per process and every
+    /// caller after that backs off silently, so a missing grant costs one INFO line per launch
+    /// rather than one error line per poll.
+    static func accessGranted() -> Bool {
+        if Permissions.fullDiskAccess { return true }
+        waitingLock.withLock {
+            guard !waitingLogged else { return }
+            waitingLogged = true
+            Log.info("iMessage: waiting for Full Disk Access")
+        }
+        return false
+    }
+
+    private static let waitingLock = NSLock()
+    nonisolated(unsafe) private static var waitingLogged = false
+
     func open() throws -> SQLiteDB {
+        guard Self.accessGranted() else {
+            throw MessagesError.noAccess("Avo can't read Messages (chat.db). \(Self.fdaGuidance)")
+        }
         let path = Self.dbPath
         var db: SQLiteDB
         do {
