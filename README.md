@@ -53,8 +53,10 @@ through permissions and model setup on first launch. If you keep the default tal
 set System Settings → Keyboard → **Press 🌐 key to** = **Do Nothing**, or a hold also opens
 Emoji or Dictation. See [How to use](docs/HOW-TO-USE.md).
 
-The first tagged release will carry signed downloads on the [Releases](../../releases) page. An
-unsigned build needs a right-click → Open the first time.
+Downloads are on the [Releases](../../releases) page. Until a release is signed with a Developer ID,
+macOS blocks the first launch: open System Settings → Privacy & Security, scroll to the Avo message,
+click **Open Anyway**, then confirm. Unsigned builds also re-ask for permissions and the API key after
+each update; a signed release will not.
 
 ## Models
 

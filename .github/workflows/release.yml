@@ -74,5 +74,5 @@ jobs:
             ${{ steps.package.outputs.signed == 'true'
               && 'Signed with Developer ID and notarized by Apple.'
               || (steps.package.outputs.signed == 'signed-only'
-                && 'Signed with Developer ID but not notarized: right-click the app and choose Open on first launch.'
-                || 'Unsigned build: right-click the app and choose Open on first launch, and allow it in System Settings > Privacy & Security if macOS blocks it.') }}
+                && 'Signed with Developer ID but not notarized: on first launch open System Settings > Privacy & Security and click Open Anyway.'
+                || 'Unsigned build: on first launch macOS blocks it; open System Settings > Privacy & Security, click Open Anyway next to Avo, then confirm. Permissions and the API key are re-asked after each unsigned update.') }}
