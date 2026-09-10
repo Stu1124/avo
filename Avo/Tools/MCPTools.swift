@@ -226,7 +226,7 @@ struct MCPTool: Tool, @unchecked Sendable {
         // a card. The server never declared it, and a strict schema validator rejects the call, so it
         // must not travel any further than this process.
         var stripped = args
-        stripped["show"] = nil
+        if !params.contains(where: { $0.name == "show" }) { stripped["show"] = nil }
         let a = repair(stripped)
         do {
             let res = try await client.callTool(remoteName, arguments: a)

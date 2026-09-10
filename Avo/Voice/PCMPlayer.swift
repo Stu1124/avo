@@ -52,10 +52,11 @@ final class PCMPlayer: @unchecked Sendable {
             engine.prepare()
             do { try engine.start() } catch {
                 Log.warn("Voice playback: output restart failed (\(error.localizedDescription))")
-                return
+                completed(gen); return
             }
         }
-        guard engine.isRunning else { return }
+        // A buffer that cannot play counts as played, so `isPlaying` and `onDrained` stay truthful.
+        guard engine.isRunning else { completed(gen); return }
         if !node.isPlaying { node.play() }
     }
 
