@@ -120,6 +120,33 @@ enum AudioInputDevice {
         return AudioObjectGetPropertyDataSize(device, &address, 0, nil, &byteCount) == noErr && byteCount > 0
     }
 
+    /// The system default input device, as Core Audio sees it right now.
+    static var defaultInputDevice: AudioDeviceID? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var device = AudioDeviceID(0)
+        var byteCount = UInt32(MemoryLayout<AudioDeviceID>.size)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &byteCount, &device) == noErr,
+              device != 0 else { return nil }
+        return device
+    }
+
+    /// True when the default input is the Mac's own microphone. Binding an audio graph to a
+    /// Bluetooth headset switches it to the low-quality headset profile, which degrades whatever
+    /// that headset is playing, so the warm-up must not bind while a headset is the default input.
+    static var defaultInputIsBuiltIn: Bool {
+        guard let device = defaultInputDevice else { return true }
+        return propertyUInt32(device, selector: kAudioDevicePropertyTransportType) == kAudioDeviceTransportTypeBuiltIn
+    }
+
+    static var defaultInputName: String {
+        guard let device = defaultInputDevice else { return "unknown" }
+        return propertyString(device, selector: kAudioObjectPropertyName) ?? "unknown"
+    }
+
     private static func propertyUInt32(_ device: AudioDeviceID, selector: AudioObjectPropertySelector) -> UInt32? {
         var address = AudioObjectPropertyAddress(
             mSelector: selector,

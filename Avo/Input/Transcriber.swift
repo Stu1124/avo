@@ -98,6 +98,14 @@ final class Transcriber {
     /// hold waits on.
     func warmUp() {
         guard prepareTask == nil else { rewarmAfterPrepare = true; return }
+        // Touching the input graph binds it to the default input first, even though the capture then
+        // switches to the chosen microphone. With a Bluetooth headset as the default input that bind
+        // drops the headset into its call profile and wrecks whatever it is playing. So no speculative
+        // warm-up then: the graph is built only while the key is actually held.
+        guard AudioInputDevice.defaultInputIsBuiltIn else {
+            Log.info("Transcriber: warm-up skipped, default input is \(AudioInputDevice.defaultInputName); binding only while the key is held")
+            return
+        }
         prepareTask = Task { [weak self] in
             guard let self else { return }
             await self.prepare()
@@ -243,7 +251,7 @@ final class Transcriber {
         // progress and stand down without touching the graph.
         if buildingEngine {
             Log.info("Transcriber: hold arrived during the graph build; waiting for the prepared engine")
-            let deadline = CFAbsoluteTimeGetCurrent() + 3
+            let deadline = CFAbsoluteTimeGetCurrent() + (AudioInputDevice.defaultInputIsBuiltIn ? 3 : 6)
             while buildingEngine, let inFlight = prepareTask {
                 let left = deadline - CFAbsoluteTimeGetCurrent()
                 guard left > 0 else { break }
@@ -267,7 +275,7 @@ final class Transcriber {
             // Building the graph blocks its thread for as long as Core Audio wants, so it happens
             // off the main actor, and the hold gives up rather than freezing the UI behind it.
             let uid = Settings.shared.microphoneUID
-            let built = try? await withTimeout(seconds: 3) { await Self.buildEngine(reusing: nil, microphoneUID: uid) }
+            let built = try? await withTimeout(seconds: AudioInputDevice.defaultInputIsBuiltIn ? 3 : 6) { await Self.buildEngine(reusing: nil, microphoneUID: uid) }
             guard session == mine, activeSession == mine else { return false }
             guard let engine = built?.engine else {
                 Log.warn("Transcriber: audio graph was not ready within 3s (\(built == nil ? "timed out" : "no usable input")); dropping this hold")
