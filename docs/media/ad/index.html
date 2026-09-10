@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Avo</title>
+  <style>
+    @font-face { font-family: Inter; src: url("./fonts/Inter-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+    @font-face { font-family: Inter; src: url("./fonts/Inter-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; }
+    @font-face { font-family: Inter; src: url("./fonts/Inter-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; }
+    @font-face { font-family: Inter; src: url("./fonts/Inter-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; }
+
+    html, body {
+      margin: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #000;
+      color: #f5f5f7;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    #stage {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      background: #000;
+    }
+
+    #desktop {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transform: scale(1.045);
+    }
+
+    #wallpaper {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 0%, rgba(55, 143, 255, 0.16), transparent 58%),
+        radial-gradient(ellipse 42% 36% at 18% 88%, rgba(55, 143, 255, 0.05), transparent 70%),
+        radial-gradient(ellipse 36% 30% at 86% 78%, rgba(55, 143, 255, 0.04), transparent 70%),
+        linear-gradient(180deg, #12151c 0%, #0b0d12 48%, #07080c 100%);
+    }
+
+    #wallpaper::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
+      opacity: 0.045;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    #menubar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px 0 14px;
+      background: linear-gradient(180deg, rgba(8, 9, 12, 0.55), rgba(8, 9, 12, 0.28));
+      backdrop-filter: blur(24px) saturate(1.2);
+      -webkit-backdrop-filter: blur(24px) saturate(1.2);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: rgba(255, 255, 255, 0.92);
+      z-index: 8;
+    }
+
+    #menubar .left, #menubar .right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 280px;
+    }
+    #menubar .right { justify-content: flex-end; gap: 12px; }
+    #menubar .app { font-weight: 600; }
+    #menubar .dim { color: rgba(255, 255, 255, 0.72); font-weight: 500; }
+    #menubar svg { display: block; }
+
+    #notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 188px;
+      height: 34px;
+      transform: translateX(-50%);
+      background: #000;
+      border-radius: 0 0 18px 18px;
+      z-index: 9;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    #notch-glow {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      width: 340px;
+      height: 90px;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse at 50% 30%, rgba(55, 143, 255, 0.55), transparent 70%);
+      opacity: 0;
+      filter: blur(18px);
+      pointer-events: none;
+      z-index: 7;
+    }
+
+    .shot {
+      position: absolute;
+      left: 50%;
+      top: 118px;
+      transform: translateX(-50%) translateY(28px) scale(0.96);
+      opacity: 0;
+      transform-origin: 50% 0%;
+      filter: drop-shadow(0 28px 60px rgba(0, 0, 0, 0.62));
+      z-index: 4;
+    }
+    .shot img { display: block; height: auto; }
+
+    #shot-onboarding img { width: 1040px; border-radius: 18px; }
+    #shot-confirm img { width: 860px; }
+    #shot-notch img { width: 820px; }
+
+    #shot-coding {
+      left: auto;
+      right: 36px;
+      top: 78px;
+      transform: translateX(40px) scale(0.98);
+      transform-origin: 100% 20%;
+    }
+    #shot-coding img { width: 420px; }
+
+    #copy {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 86px;
+      text-align: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #kicker {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #378FFF;
+      margin-bottom: 12px;
+      opacity: 0;
+    }
+
+    #line {
+      font-size: 44px;
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 1.12;
+      color: #f5f5f7;
+      text-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    #endcard {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 12;
+      opacity: 0;
+      background:
+        radial-gradient(ellipse 50% 42% at 50% 42%, rgba(55, 143, 255, 0.14), transparent 70%),
+        #05060a;
+    }
+
+    #end-mark {
+      width: 220px;
+      height: 102px;
+      margin-bottom: 28px;
+    }
+    #end-mark svg { width: 100%; height: 100%; overflow: visible; }
+
+    #end-name {
+      font-size: 72px;
+      font-weight: 600;
+      letter-spacing: -0.045em;
+      line-height: 1;
+      margin-bottom: 14px;
+    }
+
+    #end-tag {
+      font-size: 26px;
+      font-weight: 500;
+      letter-spacing: -0.025em;
+      color: rgba(245, 245, 247, 0.62);
+      margin-bottom: 36px;
+    }
+
+    #end-url {
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: #378FFF;
+    }
+
+    #vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 20;
+      background: radial-gradient(ellipse 78% 72% at 50% 48%, transparent 55%, rgba(0, 0, 0, 0.42) 100%);
+    }
+
+    .mark-stroke {
+      fill: none;
+      stroke: #378FFF;
+      stroke-width: 62;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <div id="desktop">
+      <div id="wallpaper"></div>
+      <div id="menubar">
+        <div class="left">
+          <span class="app">Avo</span>
+          <span class="dim">File</span>
+          <span class="dim">Edit</span>
+          <span class="dim">View</span>
+          <span class="dim">Window</span>
+          <span class="dim">Help</span>
+        </div>
+        <div class="right">
+          <svg width="16" height="11" viewBox="0 0 16 11" aria-hidden="true">
+            <path d="M1.2 7.6a7.2 7.2 0 0 1 13.6 0" fill="none" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M3.6 9.1a4.4 4.4 0 0 1 8.8 0" fill="none" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="8" cy="10.2" r="0.85" fill="white"/>
+          </svg>
+          <svg width="24" height="12" viewBox="0 0 24 12" aria-hidden="true">
+            <rect x="0.6" y="1.1" width="20" height="9.8" rx="2.2" fill="none" stroke="white" stroke-width="1.2"/>
+            <rect x="2.1" y="2.6" width="14.2" height="6.8" rx="1" fill="white"/>
+            <path d="M21.8 4.2v3.6c1 .4 1.3 1 1.3 1.8 0 .4-.2.6-.4.6h0" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          <span>Thu 7:14 PM</span>
+        </div>
+      </div>
+      <div id="notch-glow"></div>
+      <div id="notch"></div>
+
+      <div class="shot" id="shot-onboarding"><img src="./onboarding.jpg" alt=""></div>
+      <div class="shot" id="shot-confirm"><img src="./confirm-card.png" alt=""></div>
+      <div class="shot" id="shot-notch"><img src="./notch-answer.png" alt=""></div>
+      <div class="shot" id="shot-coding"><img src="./coding-tasks.png" alt=""></div>
+    </div>
+
+    <div id="copy">
+      <div id="kicker"></div>
+      <div id="line"></div>
+    </div>
+
+    <div id="endcard">
+      <div id="end-mark">
+        <svg viewBox="178 357 668 310" aria-hidden="true">
+          <path class="mark-stroke" id="bowl" d="M 440.38 450 A 124 124 0 1 0 440.38 574"/>
+          <path class="mark-stroke" id="stem" d="M 457 388 L 457 636"/>
+          <path class="mark-stroke" id="bar1" d="M 579 540 L 579 636"/>
+          <path class="mark-stroke" id="bar2" d="M 697 490 L 697 636"/>
+          <path class="mark-stroke" id="bar3" d="M 815 445 L 815 636"/>
+        </svg>
+      </div>
+      <div id="end-name">Avo</div>
+      <div id="end-tag">The Siri you never had.</div>
+      <div id="end-url">github.com/Stu1124/avo</div>
+    </div>
+    <div id="vignette"></div>
+  </div>
+
+  <script>
+    const DURATION = 40;
+    const $ = (id) => document.getElementById(id);
+
+    const copy = [
+      { at: 3.05, until: 6.55, kicker: "", text: "Siri was supposed to do this." },
+      { at: 6.75, until: 10.15, kicker: "", text: "So we built the one that does." },
+      { at: 10.45, until: 15.15, kicker: "Hold the key", text: "Hold. Speak. Done." },
+      { at: 15.45, until: 20.2, kicker: "Before it sends", text: "You read every field." },
+      { at: 20.5, until: 25.15, kicker: "In the notch", text: "Ask. Read. It gets out of the way." },
+      { at: 25.45, until: 29.9, kicker: "Long work", text: "Claude Code and Codex stay on the side." },
+      { at: 30.15, until: 34.35, kicker: "On this Mac", text: "Speech stays here. Bring your own model." }
+    ];
+
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function mix(a, b, t) { return a + (b - a) * t; }
+    function outCubic(x) { return 1 - Math.pow(1 - x, 3); }
+    function inOut(x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; }
+    function scene(t, a, b, fade) {
+      const f = fade ?? 0.38;
+      if (t < a || t > b) return 0;
+      if (t < a + f) return outCubic((t - a) / f);
+      if (t > b - f) return outCubic((b - t) / f);
+      return 1;
+    }
+    function enter(t, a, dur) {
+      if (t < a) return 0;
+      return outCubic(clamp((t - a) / dur, 0, 1));
+    }
+
+    function applyShot(el, t, a, b, fromY, fromX) {
+      const vis = scene(t, a, b, 0.42);
+      const e = enter(t, a, 0.85);
+      el.style.opacity = String(vis);
+      const y = mix(fromY ?? 30, 0, e);
+      const x = mix(fromX ?? 0, 0, e);
+      const s = mix(0.965, 1, e);
+      if (el.id === "shot-coding") {
+        el.style.transform = `translateX(${mix(48, 0, e)}px) scale(${s})`;
+      } else {
+        el.style.transform = `translateX(calc(-50% + ${x}px)) translateY(${y}px) scale(${s})`;
+      }
+    }
+
+    function setMarkDraw(t) {
+      const paths = ["bowl", "stem", "bar1", "bar2", "bar3"].map((id) => $(id));
+      const start = 34.55;
+      paths.forEach((p, i) => {
+        const len = p.getTotalLength();
+        p.style.strokeDasharray = String(len);
+        const local = clamp((t - (start + i * 0.09)) / 0.7, 0, 1);
+        p.style.strokeDashoffset = String(len * (1 - outCubic(local)));
+      });
+    }
+
+    let t0 = null;
+    function time() {
+      if (t0 == null) return 0;
+      return clamp((performance.now() - t0) / 1000, 0, DURATION);
+    }
+
+    function tick() {
+      const t = time();
+      const desk = enter(t, 0.15, 1.15);
+      $("desktop").style.opacity = String(desk);
+      $("desktop").style.transform = `scale(${mix(1.045, 1, desk)})`;
+
+      $("notch-glow").style.opacity = String(scene(t, 10.2, 30.1, 0.5) * 0.85);
+
+      applyShot($("shot-onboarding"), t, 10.35, 15.25, 26, 0);
+      applyShot($("shot-confirm"), t, 15.35, 20.3, 22, 0);
+      applyShot($("shot-notch"), t, 20.4, 25.25, 18, 0);
+      applyShot($("shot-coding"), t, 25.35, 30.05, 0, 48);
+
+      let kicker = "";
+      let text = "";
+      let copyVis = 0;
+      for (const c of copy) {
+        const v = scene(t, c.at, c.until, 0.28);
+        if (v > copyVis) {
+          copyVis = v;
+          kicker = c.kicker;
+          text = c.text;
+        }
+      }
+      $("kicker").textContent = kicker;
+      $("line").textContent = text;
+      $("kicker").style.opacity = String(kicker ? copyVis : 0);
+      $("line").style.opacity = String(copyVis);
+      $("line").style.transform = `translateY(${mix(12, 0, copyVis)}px)`;
+
+      const end = enter(t, 34.35, 0.9);
+      $("endcard").style.opacity = String(end);
+      $("endcard").style.transform = `scale(${mix(1.03, 1, end)})`;
+      $("copy").style.opacity = String(1 - clamp((t - 33.9) / 0.35, 0, 1));
+      $("desktop").style.filter = t > 33.9 ? `blur(${mix(0, 10, clamp((t - 33.9) / 0.7, 0, 1))}px) brightness(${mix(1, 0.45, clamp((t - 33.9) / 0.7, 0, 1))})` : "";
+      setMarkDraw(t);
+
+      if (t < DURATION) requestAnimationFrame(tick);
+    }
+
+    async function ready() {
+      await document.fonts.ready;
+      await Promise.all([...document.images].map((img) => img.decode().catch(() => {})));
+      ["bowl", "stem", "bar1", "bar2", "bar3"].forEach((id) => {
+        const p = $(id);
+        const len = p.getTotalLength();
+        p.style.strokeDasharray = String(len);
+        p.style.strokeDashoffset = String(len);
+      });
+      window.AD_READY = true;
+    }
+
+    window.play = function play() {
+      t0 = performance.now();
+      window.AD_STARTED = true;
+      requestAnimationFrame(tick);
+    };
+
+    window.seek = function seek(seconds) {
+      t0 = performance.now() - seconds * 1000;
+      requestAnimationFrame(tick);
+    };
+
+    ready().then(() => {
+      const params = new URLSearchParams(location.search);
+      if (params.has("record") || params.has("play")) window.play();
+    });
+  </script>
+</body>
+</html>
