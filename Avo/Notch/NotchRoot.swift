@@ -25,6 +25,7 @@ struct NotchSurface: View {
     @ObservedObject var model: NotchModel
     let controller: NotchController
     @State private var peek = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var notchWidth: CGFloat { NSScreen.notchScreen.notchRect.width }
     private var notchHeight: CGFloat { max(30, NSScreen.notchScreen.notchRect.height) }
 
@@ -32,12 +33,20 @@ struct NotchSurface: View {
         let expanded = model.expanded
         let compact = model.isCompactComposer
         let listening = model.phase == .listening
+        // Pointer over the collapsed notch. Listening, thinking and replying own the notch already,
+        // so the hover reaction stays out of their way.
+        let busy = model.phase == .listening || model.phase == .thinking || model.phase == .responding
+        let hover = !expanded && !busy && model.collapsedHover
+        // Reduce Motion keeps the glow — it is the part that says "clickable" — and drops the growth.
+        let lift: CGFloat = hover && !reduceMotion ? 1 : 0
+        let collapsedHeight = notchHeight + (peek ? 6 : 0) + lift * 2
         // Listening should read as a subtle extension of the hardware, not an opened window.
         let listeningWidth = max(notchWidth + 44, 320)
-        let width: CGFloat = expanded ? (listening ? listeningWidth : (compact ? 360 : NotchController.expandedWidth)) : notchWidth
+        let width: CGFloat = expanded ? (listening ? listeningWidth : (compact ? 360 : NotchController.expandedWidth)) : notchWidth + lift * 6
         ZStack(alignment: .top) {
             NotchShape(topRadius: expanded ? 14 : 8, bottomRadius: expanded ? Theme.radiusNotch : (peek ? 14 : 12))
                 .fill(Color.black)
+                .shadow(color: hover ? Theme.accent.opacity(0.18) : .clear, radius: 6, x: 0, y: 2)
                 .overlay(
                     NotchShape(topRadius: expanded ? 14 : 8, bottomRadius: expanded ? Theme.radiusNotch : (peek ? 14 : 12))
                         .fill(LinearGradient(colors: [Color.white.opacity(expanded ? 0.06 : 0), .clear], startPoint: .top, endPoint: .bottom))
@@ -65,18 +74,20 @@ struct NotchSurface: View {
                     .padding(.bottom, 14)
                     .transition(.opacity)
             } else {
-                // Collapsed: the panel ignores mouse events (a global monitor catches the notch click),
-                // so there is no hover peek here; the shape is the bare notch.
+                // Collapsed: the panel ignores mouse events (global monitors catch the notch click and
+                // the pointer moving over it), so the shape is the bare notch plus the hover reaction.
                 CollapsedIndicator(model: model)
-                    .frame(width: width, height: notchHeight)
+                    .frame(width: width, height: collapsedHeight)
             }
         }
-        .frame(width: width, height: expanded ? nil : notchHeight + (peek ? 6 : 0), alignment: .top)
+        .frame(width: width, height: expanded ? nil : collapsedHeight, alignment: .top)
         // Quick springs: open/close and the listening→full width change animate inside the controller's
         // fixed canvas, so the window never has to chase the glass mid-animation.
         .animation(expanded ? Theme.springOpen : Theme.springClose, value: expanded)
         .animation(Theme.springQuick, value: listening)
         .animation(Theme.springQuick, value: compact)
+        // Hangs from the top edge, so the notch grows down and out by a couple of points.
+        .animation(reduceMotion ? nil : Theme.springQuick, value: hover)
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .global)
         } action: { f in
@@ -108,7 +119,8 @@ struct CompactListeningView: View {
 
 
 /// Little life in the collapsed state: nothing normally; a breathing dot while a side task runs.
-/// Hover only juts the notch out a few rounded pixels (see peek); it never opens anything by itself.
+/// Hover only grows the notch a couple of points and adds a faint glow; it never opens anything
+/// by itself, and it never changes what is clickable.
 struct CollapsedIndicator: View {
     @ObservedObject var model: NotchModel
     @ObservedObject var wake = WakeWordState.shared

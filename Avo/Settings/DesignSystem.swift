@@ -912,6 +912,8 @@ enum PermissionKind: String, CaseIterable, Identifiable {
 
     /// Triggers the system prompt where one exists; otherwise opens the pane.
     func request() {
+        // System dialogs draw behind the active app's key window; step the flow back first.
+        if Thread.isMainThread { MainActor.assumeIsolated { OnboardingWindow.shared.yieldToSystemPrompt() } }
         switch self {
         case .inputMonitoring: Permissions.requestInputMonitoring()
         case .accessibility: Permissions.requestAccessibility()
@@ -966,6 +968,9 @@ final class PermissionsModel: ObservableObject {
         let granted = status[.microphone] != .granted && s[.microphone] == .granted
         status = s
         if granted { Transcriber.shared.permissionDidChange() }
+        if PermissionKind.allCases.contains(where: { status[$0] != .granted && s[$0] == .granted }) {
+            OnboardingWindow.shared.comeForward()
+        }
     }
 
     func start(interval: TimeInterval) {

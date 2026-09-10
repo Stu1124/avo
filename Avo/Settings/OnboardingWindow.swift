@@ -12,6 +12,22 @@ final class OnboardingWindow {
     private var closeObserver: Any?
     private let permissions = PermissionsModel()
 
+    /// A system permission dialog is about to appear. It is drawn by another process at the same
+    /// window level as this one, so while Avo stays the active app it lands behind the flow.
+    /// Step back and let the dialog take the front; `comeForward()` restores the flow afterwards.
+    func yieldToSystemPrompt() {
+        guard let window, window.isVisible else { return }
+        window.orderBack(nil)
+        NSApp.deactivate()
+    }
+
+    /// Bring the flow back in front once a permission changed or a dialog was answered.
+    func comeForward() {
+        guard let window, window.isVisible else { return }
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
+    }
+
     func show() {
         if window == nil {
             var root = OnboardingView(permissions: permissions, settings: Settings.shared,
@@ -269,7 +285,7 @@ struct OnboardingView: View {
                     talkKeyCap
                     Text("or").font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3)
                     KeyCap(text: "⌃ ⌥")
-                    Text("hold to talk, tap to type")
+                    Text("hold to talk")
                         .font(DS.font(DS.Size.caption)).foregroundStyle(Theme.ink3)
                         .padding(.leading, DS.Space.xs)
                 }
@@ -362,6 +378,13 @@ struct OnboardingView: View {
     }
 
     private func connectGoogle() {
+        // Without an OAuth client there is nothing to sign in to. Send people to the page that
+        // takes the credentials file instead of showing them the raw error.
+        if (settings.googleClientId ?? "").isEmpty {
+            googleError = "Needs a Google OAuth client first: Settings → Google → Choose credentials JSON. The README explains the five-minute setup."
+            SettingsWindow.shared.show(page: .google)
+            return
+        }
         googleBusy = true; googleError = nil
         Task {
             do {

@@ -112,6 +112,21 @@ Keys live in the macOS Keychain. History, screenshots and logs live in
 **Settings → About → Export diagnostics** writes a zip with the log and a settings dump; secrets
 are listed as present or absent, never included.
 
+## Google account
+
+Gmail, Calendar and Drive use your own Google account through an OAuth client you own, so nothing
+about your mail passes through anyone else. One-time setup, about five minutes:
+
+1. In the [Google Cloud console](https://console.cloud.google.com/) create a project (any name).
+2. APIs & Services → Library: enable the Gmail API, Google Calendar API and Google Drive API.
+3. APIs & Services → OAuth consent screen: External, add yourself as a test user.
+4. APIs & Services → Credentials → Create credentials → OAuth client ID → **Desktop app**. Download
+   the JSON.
+5. Avo → Settings → Google → **Choose credentials JSON…**, then **Connect**. Sign in in the browser.
+
+Avo keeps the client id and secret in the Keychain and asks for the Gmail, Calendar and Drive scopes
+once. Revoke them any time at myaccount.google.com → Security → Third-party access.
+
 ## MCP servers
 
 Put servers in `~/Library/Application Support/Avo/mcp.json`:

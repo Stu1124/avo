@@ -134,7 +134,8 @@ final class RealtimeClient: NSObject, URLSessionWebSocketDelegate, @unchecked Se
             var output: [String: Any] = ["format": ["type": "audio/pcm", "rate": 24000]]
             if includeVoice { output["voice"] = voice }
             s = ["type": "realtime",
-                 "truncation": ["type": "retention_ratio", "retention_ratio": 0.8],
+                 // NSDecimalNumber: a Double 0.8 serializes as 0.80000000000000004, which the API rejects.
+                 "truncation": ["type": "retention_ratio", "retention_ratio": NSDecimalNumber(string: "0.8")],
                  "instructions": instructions,
                  "audio": ["input": ["format": ["type": "audio/pcm", "rate": 24000],
                                      "transcription": transcription,

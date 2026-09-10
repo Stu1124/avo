@@ -53,7 +53,7 @@ final class GoogleAuth {
     func signIn() async throws -> String {
         guard let clientId = Settings.shared.googleClientId, !clientId.isEmpty,
               let clientSecret = Settings.shared.googleClientSecret, !clientSecret.isEmpty else {
-            throw AuthError(message: "No Google OAuth client configured. Put google-oauth.json (a Desktop-app client) in the Avo project folder and relaunch.")
+            throw AuthError(message: "No Google OAuth client yet. In Settings → Google, choose the credentials JSON of a Desktop-app OAuth client from the Google Cloud console.")
         }
         activeListener?.cancel(); activeListener = nil
 

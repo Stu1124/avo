@@ -15,6 +15,11 @@ final class NotchController {
     private var collapseTimer: Timer?
     private var screenObserver: Any?
     private var clickMonitors: [Any] = []
+    private var hoverMonitors: [Any] = []
+    /// Hit-tested by the mouse-moved monitor, which fires many times a second. Keeping the rect and
+    /// the last answer here — off the main actor — means a plain sweep across the menu bar costs one
+    /// `contains` and publishes nothing; only a change wakes the model.
+    private let hoverProbe = HoverProbe()
     private var layoutWork: DispatchWorkItem?
     private var responseFlushWork: DispatchWorkItem?
     private var pendingResponseDelta = ""
@@ -88,6 +93,16 @@ final class NotchController {
         return NSRect(x: n.minX, y: n.maxY - n.height - 10, width: n.width, height: n.height + 10)
     }
 
+    /// How far below the collapsed notch still counts as hovering it, so drifting under the notch
+    /// on the way to clicking it already gets a reaction.
+    static let hoverSlack: CGFloat = 14
+
+    /// The clickable notch plus that slack. Purely a hover region: hit-testing still uses `collapsedRect`.
+    static func hoverRect() -> NSRect {
+        let r = collapsedRect()
+        return NSRect(x: r.minX, y: r.minY - hoverSlack, width: r.width, height: r.height + hoverSlack)
+    }
+
     /// Screen rect of the visible glass surface. Built from geometry we know exactly: the glass is always
     /// centred on the notch and hangs from the top of the screen; only its size comes from SwiftUI.
     var surfaceScreenRect: NSRect? {
@@ -146,6 +161,7 @@ final class NotchController {
             return self.surfaceFrame
         }
         installOutsideClickMonitors()
+        installHoverMonitors()
         layout()
         panel.orderFrontRegardless()
         screenObserver = NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
@@ -156,6 +172,8 @@ final class NotchController {
     func uninstall() {
         for monitor in clickMonitors { NSEvent.removeMonitor(monitor) }
         clickMonitors = []
+        for monitor in hoverMonitors { NSEvent.removeMonitor(monitor) }
+        hoverMonitors = []
         if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
         screenObserver = nil
         layoutWork?.cancel()
@@ -188,6 +206,45 @@ final class NotchController {
         }
     }
 
+    /// The collapsed panel ignores mouse events, so SwiftUI `onHover` can never fire on the bare
+    /// notch. A mouse-moved monitor stands in for it: the notch lifts a little and picks up a faint
+    /// accent glow while the pointer is over it, so it reads as clickable before you click.
+    private func installHoverMonitors() {
+        guard hoverMonitors.isEmpty else { return }
+        let probe = hoverProbe
+        let pointerMoved: () -> Void = { [weak self] in
+            let inside = probe.rect.contains(NSEvent.mouseLocation)
+            guard inside != probe.inside else { return }      // publish on change only
+            probe.inside = inside
+            Task { @MainActor in self?.setCollapsedHover(inside) }
+        }
+        if let global = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved], handler: { _ in pointerMoved() }) {
+            hoverMonitors.append(global)
+        }
+        // Global monitors are not delivered while Avo itself is the active app, so mirror them locally.
+        if let local = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved], handler: { event in
+            pointerMoved()
+            return event
+        }) {
+            hoverMonitors.append(local)
+        }
+    }
+
+    /// Only the collapsed, idle notch reacts: listening, thinking and replying have their own visuals.
+    private func setCollapsedHover(_ hovering: Bool) {
+        let value = hovering && !targetExpanded
+        if model.collapsedHover != value { model.collapsedHover = value }
+    }
+
+    /// Re-run the hit test against the current geometry — after a collapse the pointer may already be
+    /// sitting on the notch, with no further mouse-moved event coming to tell us.
+    private func refreshCollapsedHover() {
+        hoverProbe.rect = Self.hoverRect()
+        let inside = hoverProbe.rect.contains(NSEvent.mouseLocation)
+        hoverProbe.inside = inside
+        setCollapsedHover(inside)
+    }
+
     /// Coalesce content-driven geometry changes. Streaming text can produce several SwiftUI layout
     /// passes per network packet; the AppKit window only needs the latest settled size.
     private func scheduleLayout() {
@@ -213,6 +270,7 @@ final class NotchController {
             setFrame(NSRect(x: canvas.minX, y: r.minY - Self.bottomSlack, width: canvas.width, height: r.height + Self.bottomSlack))
         }
         if !panel.isVisible { panel.orderFrontRegardless() }
+        refreshCollapsedHover()
     }
 
     private func setFrame(_ f: NSRect) {
@@ -465,6 +523,7 @@ final class NotchController {
         AgentRuntime.shared.requestBeganWhileOpen = targetExpanded
         if !targetExpanded {
             targetExpanded = true
+            if model.collapsedHover { model.collapsedHover = false }
             surfaceFrame = .zero
             panel.ignoresMouseEvents = false
             noteMotion(0.5)
@@ -522,4 +581,13 @@ final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
         if let r = interactiveRect?(), !r.insetBy(dx: -10, dy: -10).contains(swiftUIPoint) { return nil }
         return super.hitTest(point)
     }
+}
+
+
+/// Pointer state shared with the mouse-moved monitors. Deliberately outside the main actor: the
+/// monitor closures run on the main thread but are not actor-isolated, and hopping onto the actor
+/// for every mouse move just to answer "still over the notch?" is exactly the cost worth avoiding.
+final class HoverProbe: @unchecked Sendable {
+    var rect: NSRect = .zero
+    var inside = false
 }

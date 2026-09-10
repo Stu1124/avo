@@ -86,12 +86,6 @@ final class Settings: ObservableObject {
     /// Comma-separated product names, people, and specialist terms that speech recognition should favor.
     @Published var dictationVocabulary = "Avo, Claude, Codex, ChatGPT, OpenAI, SwiftUI, Xcode, iMessage, Gmail" { didSet { save("dictationVocabulary", dictationVocabulary) } }
 
-    /// Modifier-only talk keys are too easy to tap accidentally while using normal shortcuts.
-    /// Keep tap-to-type on dedicated keys; a silent modifier tap should simply disappear.
-    var shortTapOpensComposer: Bool {
-        talkKey == "fn" || talkKey == "f5" || talkKey == "f6"
-    }
-
     var dictationTerms: [String] {
         dictationVocabulary
             .components(separatedBy: CharacterSet(charactersIn: ",\n"))

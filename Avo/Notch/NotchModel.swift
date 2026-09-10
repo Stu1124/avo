@@ -22,6 +22,9 @@ final class NotchModel: ObservableObject {
     @Published var audioLevel: Float = 0
     @Published var errorText: String?
     @Published var hoverPinned = false
+    /// Pointer is over the collapsed notch (or just under it). The collapsed panel ignores mouse
+    /// events, so SwiftUI hover never fires there; NotchController drives this from an event monitor.
+    @Published var collapsedHover = false
     @Published var speaking = false
     @Published var deepMode = false
     @Published var sideTasks: [SideTask] = []

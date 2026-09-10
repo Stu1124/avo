@@ -40,7 +40,7 @@ struct GeneralPage: View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
             PageHeader(title: "General", subtitle: "Keys, context, model and what Avo keeps.")
             SectionCard(title: "Keys") {
-                PickerRow(title: "Hold to talk", subtitle: "Release to send. Tapping a modifier cancels; tapping fn or an F-key opens the composer. Esc cancels. ⌃⌥ works as an alias.", selection: $s.talkKey,
+                PickerRow(title: "Hold to talk", subtitle: "Release to send. A short tap cancels and sends nothing. Esc cancels. ⌃⌥ works as an alias. Click the notch to type instead.", selection: $s.talkKey,
                           options: [(id: "fn", label: "fn / 🌐"), (id: "rightCommand", label: "Right ⌘"), (id: "rightOption", label: "Right ⌥"), (id: "rightControl", label: "Right ⌃"), (id: "controlOption", label: "⌃ ⌥"), (id: "f5", label: "F5"), (id: "f6", label: "F6")])
                 PickerRow(title: "Open composer", subtitle: "Global shortcut to type to Avo. Clicking the notch also opens it.", selection: $s.composerShortcut,
                           options: [(id: "optionSpace", label: "⌥ Space"), (id: "commandShiftSpace", label: "⌘ ⇧ Space"), (id: "controlSpace", label: "⌃ Space"), (id: "fnSpace", label: "fn Space"), (id: "none", label: "Off")])

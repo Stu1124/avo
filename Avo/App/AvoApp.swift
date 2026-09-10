@@ -298,14 +298,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     return
                 }
                 if liveEmpty { Log.info("Listen: empty capture cancelled quietly") }
+                // A talk key that heard nothing always cancels quietly. Only the notch (or the menu
+                // bar item, avo://compose, or the optional shortcut) opens the composer.
                 ContextBuilder.shared.discardDraft()
                 notch.collapse()
-                if held < 0.35, Settings.shared.shortTapOpensComposer, liveEmpty {
-                    // Dedicated talk keys retain the convenient tap-to-type gesture.
-                    ContextBuilder.shared.pendingGestureShots = shots
-                    Log.info("Listen: silent dedicated-key tap opened composer")
-                    notch.presentComposer()
-                }
                 return
             }
             ContextBuilder.shared.setGestureShots(shots)

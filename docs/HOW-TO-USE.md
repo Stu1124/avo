@@ -2,7 +2,7 @@
 
 **Launch:** `/Applications/Avo.app` (menu bar icon). First launch opens onboarding: grant permissions, connect Google, pick a voice (optional).
 
-**Talk:** hold your configured talk key (default **fn**), speak, then let go. Right ⌘ / ⌥ / ⌃ arm after a short hold on their own, so your normal keyboard shortcuts keep working. Tapping a modifier cancels and sends nothing; tapping fn, F5 or F6 without speaking opens the text composer. Control+Option works as an alias. Esc cancels.
+**Talk:** hold your configured talk key (default **fn**), speak, then let go. Right ⌘ / ⌥ / ⌃ arm after a short hold on their own, so your normal keyboard shortcuts keep working. A short tap cancels and sends nothing — to type instead, click the notch. Control+Option works as an alias. Esc cancels.
 
 **Screen context:** hold your talk key, speak, release. Avo captures the screen after the hold and sends it with the request. The capture becomes a floating card that flies into the notch. Settings → General → Context has separate **Screen awareness** and **Screenshot animation** toggles; with the animation off Avo still captures. Reduce Motion shows a short stationary cue instead.
 
@@ -130,7 +130,7 @@ Open with the menu bar item, **⌘,**, or `open "avo://settings"`. Eight pages.
 
 **Google**
 - *Account*: Connect (browser sign-in) or Disconnect. Avo keeps one refresh token, in the Keychain.
-- *OAuth client*: pick the credentials JSON downloaded from the Google Cloud console.
+- *OAuth client*: pick the credentials JSON of a Desktop-app OAuth client from the Google Cloud console (enable the Gmail, Calendar and Drive APIs on that project first; the README has the five steps). Then Connect.
 - *Scopes*: what sign-in will request, read-only.
 
 **Coding**

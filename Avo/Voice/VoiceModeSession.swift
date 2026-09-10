@@ -259,13 +259,7 @@ final class VoiceModeSession {
         let code = err["code"] as? String ?? ""
         let kind = err["type"] as? String ?? ""
         // The GA session shape was rejected: reconnect once with the beta header and flat shape.
-        if !configured, !triedLegacy, client?.legacy == false {
-            triedLegacy = true
-            Log.warn("Realtime session.update rejected (\(message)); retrying with legacy session shape")
-            client?.close(); client = nil
-            connect(legacy: true)
-            return
-        }
+        // The Realtime beta shape was retired by OpenAI; a rejected session.update is surfaced as is.
         let benign = message.localizedCaseInsensitiveContains("truncat")
             || message.localizedCaseInsensitiveContains("no active response")
             || message.localizedCaseInsensitiveContains("already has an active response")

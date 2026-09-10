@@ -126,6 +126,12 @@ enum DebugPreviews {
         m.reset()
         await renderNotchSurface(m, controller, dir: dir, name: "notch-collapsed")
 
+        // Same state with the pointer over the notch: a little taller and wider, faint accent glow.
+        m.reset()
+        m.collapsedHover = true
+        await renderNotchSurface(m, controller, dir: dir, name: "notch-hover")
+        m.collapsedHover = false
+
         m.reset()
         m.expanded = true
         m.phase = .listening
