@@ -2,7 +2,7 @@
 
 **Launch:** `/Applications/Avo.app` (menu bar icon). First launch opens onboarding: grant permissions, connect Google, pick a voice (optional).
 
-**Talk:** hold your configured talk key (default **fn**), speak, then let go. Right ⌘ / ⌥ / ⌃ arm after a short hold on their own, so your normal keyboard shortcuts keep working. A short tap cancels and sends nothing — to type instead, click the notch. Control+Option works as an alias. Esc cancels.
+**Talk:** hold your configured talk key (default **fn**), speak, then let go. Right ⌘ / ⌥ / ⌃ arm after half a second held on their own, so your normal keyboard shortcuts keep working. A short tap cancels and sends nothing — to type instead, click the notch. Control+Option works as an alias. Esc cancels.
 
 **Screen context:** hold your talk key, speak, release. Avo captures the screen after the hold and sends it with the request. The capture becomes a floating card that flies into the notch. Settings → General → Context has separate **Screen awareness** and **Screenshot animation** toggles; with the animation off Avo still captures. Reduce Motion shows a short stationary cue instead.
 
@@ -16,7 +16,7 @@
 
 **Voice replies:** off by default. Settings → Voice → Speak replies. The engine is Apple's on-device voice, which needs no key; Gemini is optional and needs a Gemini key. Preview either before choosing.
 
-**Voice mode (conversation):** menu bar → Voice Mode, or say "start voice mode". It runs on the OpenAI Realtime API, so it needs an OpenAI key. You can interrupt it, and it has the same tools. It ends on "that's all", 25 s of silence, or the toggle.
+**Voice mode (conversation):** menu bar → Voice Mode, or say "start voice mode". It runs on the OpenAI Realtime API, so it needs an OpenAI key and sends microphone audio to OpenAI for as long as the session is on. You can interrupt it, and it has the same tools. It ends on "that's all", 25 s of silence, or the toggle.
 
 **Coding agents:** "have Claude fix the flaky test in my-project" / "run Codex on the notes project to …". Progress in the side of the notch; permission questions arrive as cards you answer by voice or click. "Stop it" stops the open task.
 
@@ -51,6 +51,7 @@
 Avo asks for four permissions up front, during onboarding, and for the rest only when a tool needs
 one. All ten appear with live status in **Settings → Permissions**, where **Request** opens the macOS
 prompt (when macOS offers one) and **Open Settings** jumps to the right pane of System Settings.
+Calendars is listed so you can see and revoke the system grant; no tool reads Apple Calendar today.
 
 **Asked up front (onboarding, step 3):**
 - **Microphone**: hears you while you hold the talk key. Required to continue.
@@ -66,7 +67,8 @@ two can wait, and Avo asks again the first time it needs them.
 - **Full Disk Access**: iMessage history, and Desktop/Documents searches without per-folder prompts.
   macOS offers no in-app prompt for this one: open System Settings and add Avo to the list.
 - **Reminders**: creating and reading reminders.
-- **Calendars**: reading Apple Calendar events.
+- **Calendars**: Apple Calendar access. No current tool reads those events. Google Calendar uses the
+  Google account in Settings → Google and does not need this permission.
 - **Location**: "where am I" and nearby searches.
 - **Automation**: controlling Messages, Spotify and other apps by Apple Events.
 

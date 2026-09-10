@@ -9,6 +9,7 @@ final class HotkeyMonitor {
     private var source: CFRunLoopSource?
 
     private enum TalkSource { case instantModifier, delayedModifier, functionKey }
+    static let delayedModifierArmDelay: TimeInterval = 0.5
     private var activeTalkSource: TalkSource?
     private var instantModifierDown = false
     private var instantModifierSuppressed = false
@@ -37,7 +38,10 @@ final class HotkeyMonitor {
 
     func start() {
         guard tap == nil else { return }
+        // Mouse buttons are in the mask so a ⌘-click (or a click while a modifier is held) reads as a
+        // chord and never opens the microphone.
         let mask = (1 << CGEventType.flagsChanged.rawValue) | (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue)
+            | (1 << CGEventType.leftMouseDown.rawValue) | (1 << CGEventType.rightMouseDown.rawValue) | (1 << CGEventType.otherMouseDown.rawValue)
         let callback: CGEventTapCallBack = { _, type, event, refcon in
             let me = Unmanaged<HotkeyMonitor>.fromOpaque(refcon!).takeUnretainedValue()
             if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
@@ -75,6 +79,10 @@ final class HotkeyMonitor {
 
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        if type == .leftMouseDown || type == .rightMouseDown || type == .otherMouseDown {
+            if hasHeldTalkInput { cancelTalkForKeyChord() }
+            return Unmanaged.passUnretained(event)
+        }
         let flags = event.flags
         let key = Int(event.getIntegerValueField(.keyboardEventKeycode))
         if type == .flagsChanged {
@@ -145,7 +153,9 @@ final class HotkeyMonitor {
             }
             delayedModifierTimer = work
             // Short enough that the notch feels immediate; a chord key arriving later still cancels.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: work)
+            // Half a second of a lone modifier: long enough that ⌘C, ⌘-click, or a rested thumb never
+            // opens the microphone, short enough to feel immediate when you mean it.
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.delayedModifierArmDelay, execute: work)
         } else if !isDown, delayedModifierDown {
             delayedModifierDown = false
             delayedModifierTimer?.cancel()
