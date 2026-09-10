@@ -5,6 +5,10 @@
 Avo is the voice assistant who gets things done: hold a key, say it, done. Speech stays on-device.
 Bring your own model.
 
+<video src="docs/media/avo-ad.mp4" width="700" controls muted playsinline>
+  <a href="docs/media/avo-ad.mp4">Watch the 40-second launch ad</a>
+</video>
+
 <img src="docs/media/onboarding.jpg" width="700" alt="Avo onboarding, step one: hold fn, say it, done">
 
 *Step one of six. The rest set your model, permissions and voice.*
@@ -180,6 +184,7 @@ Useful from a Shortcut, a Stream Deck button, a cron job, or another agent.
 - [Implementation brief for contributors and agents](docs/CONTRIBUTING-AGENTS.md)
 - [The Avo mark](design/README.md)
 - [Security](SECURITY.md)
+- Launch ad: [docs/media/avo-ad.mp4](docs/media/avo-ad.mp4) — rebuild with `scripts/render-ad.sh`
 
 ## Contributing
 
