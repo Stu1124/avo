@@ -77,6 +77,7 @@ def render(path: Path) -> None:
 
 
 if __name__ == "__main__":
-    out = Path("/tmp/avo-ad-render/score.wav")
+    import sys
+    out = Path(sys.argv[1] if len(sys.argv) > 1 else "/tmp/avo-ad-render/score.wav")
     render(out)
     print(out)
