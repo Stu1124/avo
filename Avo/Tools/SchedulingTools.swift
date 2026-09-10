@@ -218,6 +218,13 @@ enum SchedulingTools {
         let statusLabel = "Cancelling"
         let statusIcon = SchedulingTools.icon
         let group = SchedulingTools.group
+        var confirmation: ConfirmationSpec? {
+            ConfirmationSpec(icon: SchedulingTools.icon, title: "Cancel scheduled item",
+                             subtitle: { $0.str("id").map { "Cancels \($0) and it will not run." } },
+                             fields: [(key: "id", label: "Item id", kind: .text, required: true)],
+                             confirmLabel: "Cancel",
+                             destructive: true)
+        }
         func run(_ args: [String: Any], ctx: ToolContext) async -> ToolResult {
             guard let id = args.str("id") else { return .fail("id is required") }
             let result: [String: Any]? = await MainActor.run {

@@ -535,6 +535,7 @@ final class NotchController {
 
     /// Debug: render the panel's content view to a PNG (works without Screen Recording permission).
     /// Asks the window server which window sits under points around the notch (no events posted).
+    #if DEBUG
     func debugHitTest() {
         let screen = NSScreen.notchScreen
         let n = screen.notchRect
@@ -558,6 +559,7 @@ final class NotchController {
             i += 1
         }
     }
+    #endif
 }
 
 

@@ -3,6 +3,12 @@ DerivedData/
 dist/
 *.xcodeproj
 google-oauth.json
+bootstrap-secrets.json
+.env
+*.env
+*.p12
+*.pem
+*.p8
 *.log
 *.pdf
 .DS_Store

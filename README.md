@@ -10,9 +10,9 @@ Bring your own model.
 *Step one of six. The rest set your model, permissions and voice.*
 
 Hold your talk key, speak, let go. Avo transcribes on this Mac, looks at your screen when the
-request needs it, and acts through your own apps: Messages, Mail, Calendar, Reminders, Notes,
+request needs it, and acts through your own apps: Messages, Gmail, Google Calendar, Reminders, Notes,
 Finder, Spotify, Google Drive, Claude Code and Codex, plus any MCP server you add. Anything that
-sends, creates, or changes something shows you an editable card first.
+sends, creates or deletes something shows you an editable card first.
 
 On macOS 26 you can skip the key and say **"Hey Avo"** instead. Avo matches the phrase on this Mac
 and sends nothing until it hears it. Hands-free stays off until you turn it on in
@@ -49,7 +49,9 @@ scripts/install.sh --now
 
 `scripts/install.sh` builds Release and, with `--now`, installs to `/Applications` and relaunches.
 Without `--now` it only builds. See [AGENTS.md](AGENTS.md) for signing options. Onboarding walks
-through permissions and model setup on first launch.
+through permissions and model setup on first launch. If you keep the default talk key (**fn**),
+set System Settings → Keyboard → **Press 🌐 key to** = **Do Nothing**, or a hold also opens
+Emoji or Dictation. See [How to use](docs/HOW-TO-USE.md).
 
 The first tagged release will carry signed downloads on the [Releases](../../releases) page. An
 unsigned build needs a right-click → Open the first time.
@@ -90,7 +92,8 @@ Just in time, the first time a tool needs it:
 - **Full Disk Access**: iMessage history, and Desktop/Documents searches without per-folder
   prompts. macOS offers no in-app prompt for this one, so add Avo in System Settings.
 - **Reminders**: reading and creating reminders.
-- **Calendars**: reading Apple Calendar.
+- **Calendars**: Apple Calendar access. No current tool reads those events — Gmail and Google
+  Calendar use your Google account instead, and do not need this permission.
 - **Location**: "where am I" and nearby searches.
 - **Automation**: driving Messages, Spotify and other apps by Apple Events.
 
@@ -99,13 +102,18 @@ naming it.
 
 ## Privacy
 
-Dictation and wake-word detection run on this Mac, through Apple's speech models. Avo does not
-upload your audio.
+Dictation and wake-word detection run on this Mac, through Apple's speech models. Hold-to-talk
+does not upload your audio.
 
-What leaves the Mac, and only when you make a request: the text of that request, the conversation
-so far, tool results the model needs to answer, and a screenshot when the request is about your
-screen. It goes to the provider you configured. Avo has no backend of its own, so point it at
-Ollama or LM Studio and nothing leaves the machine.
+Voice mode is different: it is an open conversation on the OpenAI Realtime API, so microphone
+audio goes to OpenAI for as long as that session is on. Spoken replies use Apple's on-device
+voice by default; Gemini, if you pick it, sends the reply text to Google.
+
+What else leaves the Mac, and only when you make a request: the text of that request, the
+conversation so far, tool results the model needs to answer, and a screenshot when the request
+is about your screen. It goes to the provider you configured. Avo has no backend of its own, so
+point it at Ollama or LM Studio and nothing leaves the machine (except voice mode, which still
+needs OpenAI).
 
 Keys live in the macOS Keychain. History, screenshots and logs live in
 `~/Library/Application Support/Avo/`. Avo deletes them on the retention window you set in Settings.
@@ -159,8 +167,9 @@ open "avo://ask?text=what%20is%20on%20my%20calendar%20tomorrow"
 ```
 
 `avo://compose` opens the type-in field, `avo://settings` and `avo://voice` open Settings and voice
-mode. `scripts/avo ask "…"` is the same thing without the URL-encoding. Useful from a Shortcut, a
-Stream Deck button, a cron job, or another agent.
+mode, `avo://quit` and `avo://restart` stop or relaunch the app. `scripts/avo ask "…"` is the same
+thing without the URL-encoding. Any local app can open these URLs — see [SECURITY.md](SECURITY.md).
+Useful from a Shortcut, a Stream Deck button, a cron job, or another agent.
 
 ## Docs
 
@@ -168,6 +177,7 @@ Stream Deck button, a cron job, or another agent.
 - [Working on Avo](AGENTS.md)
 - [Implementation brief for contributors and agents](docs/CONTRIBUTING-AGENTS.md)
 - [The Avo mark](design/README.md)
+- [Security](SECURITY.md)
 
 ## Contributing
 

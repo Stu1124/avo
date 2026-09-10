@@ -367,7 +367,7 @@ final class CodexSession: CodingAgentSession, @unchecked Sendable {
         agentText = ""; lastAgentMessage = ""
         var args = ["exec"]
         if let t = threadId { args += ["resume", t] }
-        args += ["--json", "--skip-git-repo-check", "--sandbox", sandbox, "-c", "approval_policy=never"]
+        args += ["--json", "--skip-git-repo-check", "--sandbox", sandbox, "-c", "approval_policy=\(approvalPolicy)"]
         if let m = model, !m.isEmpty { args += ["--model", m] }
         if let e = effort, !e.isEmpty { args += ["-c", "model_reasoning_effort=\"\(Self.normalizeEffort(e))\""] }
         args.append(message)

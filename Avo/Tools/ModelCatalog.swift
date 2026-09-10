@@ -22,8 +22,8 @@ enum ModelCatalog {
     static func models(for agent: String) -> [Model] { agent == "codex" ? codex : claude }
     static func efforts(for agent: String) -> [String] { agent == "codex" ? codexEfforts : claudeEfforts }
 
-    /// Avo's default when the user names no model (from AVO_MEMORY: Opus 5 for medium Claude tasks,
-    /// GPT-5.6 Luna for Codex; Astra only on request). Not the CLI's own default.
+    /// Avo's default when the user names no model: Opus for Claude Code, GPT-5.6 Luna for Codex.
+    /// Astra is offered in the picker and used only when the user names it. Not the CLI's own default.
     static func defaultModel(for agent: String) -> Model {
         agent == "codex" ? codex.first { $0.id == "gpt-5.6-luna" }! : claude.first { $0.id == "opus" }!
     }

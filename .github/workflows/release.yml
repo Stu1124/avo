@@ -25,6 +25,8 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_26.app || ls /Applications | grep Xcode
       - name: Install xcodegen
         run: brew install xcodegen
+      - name: Unit tests
+        run: scripts/test.sh
       - name: Import the Developer ID certificate
         if: env.MAC_CERT_P12 != ''
         run: |

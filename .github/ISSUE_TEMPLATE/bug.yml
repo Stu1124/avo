@@ -1,0 +1,42 @@
+name: Bug
+description: Something Avo did wrong on your Mac
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problems go in a [private advisory](https://github.com/Stu1124/avo/security/advisories/new), not here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you said or did, and what Avo did instead.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Avo version
+      description: Settings → About
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS
+      placeholder: "15.6 / 26.0"
+    validations:
+      required: true
+  - type: textarea
+    id: extras
+    attributes:
+      label: Provider and extras
+      description: Model id and provider style, and whether Google / MCP / coding agents were involved. Do not paste keys or mail.

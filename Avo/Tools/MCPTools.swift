@@ -119,12 +119,6 @@ struct MCPTool: Tool, @unchecked Sendable {
     let group: String
     let confirmation: ConfirmationSpec?
 
-    private static let confirmPrefixes = [
-        "add", "append", "archive", "cancel", "complete", "create", "delete", "deploy", "dismiss",
-        "edit", "execute", "install", "mark", "move", "pause", "post", "publish", "remove", "rename",
-        "reply", "resume", "run", "schedule", "send", "set", "start", "stop", "trash", "update", "upload", "write",
-    ]
-
     init(server: String, info: MCPToolInfo) {
         self.server = server
         remoteName = info.name
@@ -137,11 +131,9 @@ struct MCPTool: Tool, @unchecked Sendable {
         group = Self.group(for: server)
         let verb = info.name.split(whereSeparator: { !$0.isLetter }).first.map(String.init)?.lowercased() ?? info.name.lowercased()
         statusLabel = "Running \(info.name)"
-        let lower = info.name.lowercased()
         let explicitlyReadOnly = info.annotations["readOnlyHint"] as? Bool == true
-        let explicitlyMutating = info.annotations["readOnlyHint"] as? Bool == false
-            || info.annotations["destructiveHint"] as? Bool == true
-        if !explicitlyReadOnly && (explicitlyMutating || Self.confirmPrefixes.contains(where: { lower.hasPrefix($0) })) {
+        // Unknown tools confirm. Only an explicit read-only annotation skips the card.
+        if !explicitlyReadOnly {
             let ps = params
             let title = (info.title ?? info.name.replacingOccurrences(of: "_", with: " ")).capitalized
             let shown = (ps.filter(\.required) + ps.filter { !$0.required }).prefix(8)

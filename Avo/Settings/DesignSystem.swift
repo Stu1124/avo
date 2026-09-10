@@ -804,9 +804,9 @@ enum PermissionKind: String, CaseIterable, Identifiable {
         case .screenRecording: return "Lets Avo see your screen on request."
         case .microphone: return "Hears you while you hold the talk key."
         case .speechRecognition: return "Turns your speech into text on this Mac."
-        case .fullDiskAccess: return "Reads iMessage history for context."
+        case .fullDiskAccess: return "Reads iMessage history, and Desktop and Documents without per-folder prompts."
         case .reminders: return "Creates and reads your reminders."
-        case .calendars: return "Reads events from Apple Calendar."
+        case .calendars: return "Apple Calendar access. No current tool reads those events."
         case .location: return "Locates you for nearby searches."
         case .automation: return "Controls Messages, Spotify and other apps."
         }
