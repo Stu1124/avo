@@ -122,10 +122,15 @@ final class ScheduledActionStore {
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
-        // Anything stuck in "running" from a crash mid-fire is unknowable: mark failed rather than re-send.
+        // Anything stuck in "running" from a crash mid-fire is unknowable: mark failed rather than
+        // re-send. Persist the repair, or the next launch reads "running" again from disk and the
+        // row stays wrong for good.
+        var repaired = false
         for i in actions.indices where actions[i].status == "running" {
             actions[i].status = "failed"; actions[i].error = "Avo quit while this was running; it may or may not have completed."
+            repaired = true
         }
+        if repaired { save() }
         // Overdue actions run shortly after launch (registry must be populated first).
         if actions.contains(where: \.isPending) {
             let t = Timer(timeInterval: 5, repeats: false) { [weak self] _ in Task { @MainActor in self?.tick() } }
@@ -194,7 +199,7 @@ final class ScheduledActionStore {
         let notch = NotchController.shared
         let chip = notch.status(a.doneLine.hasPrefix("Sent") || a.doneLine.hasPrefix("Replied") ? "Sending (scheduled)" : "Running (scheduled)", icon: a.icon)
         var result: ToolResult
-        if let tool = ToolRegistry.shared.tool(a.innerTool) {
+        if let tool = ToolRegistry.shared.enabledTool(a.innerTool) {
             let args = a.arguments
             let ctx = ToolContext(turnId: UUID(), screenshotPath: nil, selectedText: nil, frontmostApp: nil, frontmostBundleId: nil,
                                   clipboard: nil, openCardTaskId: nil, attachments: [], transcript: a.title)
@@ -250,7 +255,6 @@ final class ScheduledActionStore {
         return actions[i]
     }
 
-    func find(_ id: String) -> ScheduledAction? { actions.first { $0.id == id } }
 
     /// Pending first (soonest first), then recently finished/failed.
     func listActive() -> [ScheduledAction] {

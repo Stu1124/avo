@@ -69,7 +69,11 @@ struct GeneralPage: View {
             SectionCard(title: "Model") {
                 PickerRow(title: "Provider style", subtitle: "OpenAI uses the Responses API. OpenAI-compatible works with Ollama, LM Studio, OpenRouter, Groq and xAI.", selection: styleBinding,
                           options: Self.styleOptions)
+                    // The detect result describes the settings it wrote. Point them somewhere else and
+                    // it is stale, so it goes.
+                    .onChange(of: s.apiStyle) { _, _ in detectMessage = nil }
                 TextRow(title: "Base URL", placeholder: "https://api.openai.com/v1", text: $s.apiBaseURL, width: 280)
+                    .onChange(of: s.apiBaseURL) { _, _ in detectMessage = nil }
                 KeyField(provider: .openAI)
                 TextRow(title: "Model", subtitle: "Any model id the server accepts.", placeholder: "model id", text: $s.brainModel, width: 220)
                 ActionRow(title: "Detect local", subtitle: detectMessage ?? "Looks for an Ollama server already running on this Mac.") {
@@ -202,6 +206,7 @@ struct DataSection: View {
 struct VoicePage: View {
     @ObservedObject var s: Settings
     @ObservedObject var preview: VoicePreview
+    @ObservedObject var voice: VoiceModeSession
 
     private static let ttsModels = ["gemini-3.1-flash-tts-preview", "gemini-2.5-flash-preview-tts"]
     private static let realtimeModels = ["gpt-realtime-2.1", "gpt-realtime-2.1-mini"]
@@ -237,8 +242,12 @@ struct VoicePage: View {
             }
             SectionCard(title: "Voice mode", footer: "Voice mode keeps the microphone open for a back-and-forth conversation until you end it.") {
                 PickerRow(title: "Realtime model", selection: $s.realtimeModel, options: Self.realtimeModels)
-                ActionRow(title: "Start voice mode", subtitle: "Also available from the menu bar.") {
-                    DSPill("Start voice mode", icon: "waveform", style: .primary) { VoiceModeSession.shared.toggle() }
+                // The pill toggles, so it has to say which way. Labelled "Start voice mode" while a
+                // session was running, it read as a no-op and stopping it looked like a bug.
+                ActionRow(title: voice.isActive ? "Voice mode is running" : "Start voice mode", subtitle: "Also available from the menu bar.") {
+                    DSPill(voice.isActive ? "Stop voice mode" : "Start voice mode",
+                           icon: voice.isActive ? "stop.fill" : "waveform",
+                           style: voice.isActive ? .destructive : .primary) { voice.toggle() }
                 }
             }
             HandsFreeSection()
@@ -562,8 +571,6 @@ struct KeysPage: View {
             PageHeader(title: "Keys", subtitle: "Stored in the macOS Keychain. Test sends one authenticated request.")
             SectionCard(title: "Providers", footer: "The brain's API key lives in Settings → General → Model.") {
                 KeyField(provider: .gemini)
-                KeyField(provider: .fish)
-                KeyField(provider: .xai)
             }
         }
     }
@@ -647,18 +654,25 @@ struct AboutPage: View {
         }
     }
 
+    /// The export runs off the main actor, so the `busy` pill actually gets to animate. Called
+    /// straight through, the whole zip happened inside one main-actor hop and `exporting` went true
+    /// and false again without a single frame in between.
     private func exportDiagnostics() {
+        guard !exporting else { return }
         exporting = true
         diagnosticsMessage = nil
-        do {
-            let url = try Diagnostics.export(redactSpokenText: redactSpokenText)
-            diagnosticsMessage = "Saved \(url.lastPathComponent) to your Desktop."
-            NSWorkspace.shared.activateFileViewerSelecting([url])
-            Sounds.shared.play(.done)
-        } catch {
-            diagnosticsMessage = error.localizedDescription
-            Sounds.shared.play(.error)
+        let redact = redactSpokenText
+        Task {
+            do {
+                let url = try await Diagnostics.export(redactSpokenText: redact)
+                diagnosticsMessage = "Saved \(url.lastPathComponent) to your Desktop."
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+                Sounds.shared.play(.done)
+            } catch {
+                diagnosticsMessage = error.localizedDescription
+                Sounds.shared.play(.error)
+            }
+            exporting = false
         }
-        exporting = false
     }
 }

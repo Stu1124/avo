@@ -73,7 +73,6 @@ final class HotkeyMonitor {
         tap = nil; source = nil
     }
 
-    var isInstalled: Bool { tap != nil }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         let flags = event.flags

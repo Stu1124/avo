@@ -14,14 +14,13 @@ A voice agent for the Mac: hold fn → on-device transcript → `AgentRuntime` s
 - `Avo/Cards/CardModels.swift`: `CardKind` cases: confirmation, glance (blocks: header/list/stats/keyValue/bars/progress/badges/text), draft, files, task, reminder, question. Icons are SF symbol names or `"app:<bundle id>"` (e.g. `app:com.apple.MobileSMS`, `app:com.apple.reminders`, `app:com.google.Chrome`).
 - `Avo/Notch/NotchController.swift` (`NotchController.shared`): `present(_ card: CardKind, id:)`, `update(id, card)`, `dismissCard(id)`, `status(label, icon:)`, `model.sideTasks` for long-running work, `model.expanded`.
 - `Avo/Agent/AgentRuntime.swift`: `AgentRuntime.shared.ask(icon:title:body:options:freeText:) async -> String` shows a question card and waits for the user (voice or click). `AgentRuntime.shared.run(text:)` starts a turn.
-- `Avo/Support/Settings.swift`: `Settings.shared` (main actor) for preferences, including the provider style, base URL and model id; secrets via Keychain-backed properties (`apiKey` — the brain provider's key — plus `geminiKey`, `fishKey`, `xaiKey`, `googleClientId`/`googleClientSecret`, `googleRefreshToken`, `googleAccountEmail`).
+- `Avo/Support/Settings.swift`: `Settings.shared` (main actor) for preferences, including the provider style, base URL and model id; secrets via Keychain-backed properties (`apiKey` — the brain provider's key — plus `geminiKey`, `googleClientId`/`googleClientSecret`, `googleRefreshToken`, `googleAccountEmail`).
 - `Avo/Agent/Brain.swift` / `Avo/Agent/BrainClient.swift`: provider selection and the streaming client protocol. Add a provider here, not in `AgentRuntime`.
 - `Avo/Support/Log.swift`: `Log.info/warn/error`, `Paths.*` (everything under `~/Library/Application Support/Avo/`).
 - `Avo/Notch/Theme.swift`: colors, radii, springs, `glassCard()`. Dark glass only. Springs only, never ease-in.
 - `Avo/Support/Sounds.swift`: `Sounds.shared.play(.card/.done/.error/...)`.
 
 ## Rules
-- Own only the files assigned to you. Do not edit files owned by others; if you need a hook in a shared file, add a small extension in your own file instead.
 - Every tool: a description that says what it does and when to use it, all params with descriptions, `group` set (e.g. "iMessage", "Reminders", "Finder", "Gmail", "Calendar", "Drive", "Coding", "Text", "Memory", "Spotify", "Apps").
 - Never guess data; when a lookup is needed, return a clear error with `guidance` for the model.
 - JSON returned to the model must be compact and useful (ids the model needs later, human-readable dates).

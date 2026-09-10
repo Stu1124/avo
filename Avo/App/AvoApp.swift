@@ -129,10 +129,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     Task { await AgentRuntime.shared.run(text: t) }
                 }
             case "compose": notch.presentComposer()
-            case "hittest": notch.debugHitTest()
             #if DEBUG
-            // Verification only: opens the first-run flow, and caches every open window to PNG
-            // (with its key/first-responder state in the log) without Screen Recording.
+            // Verification only: opens the first-run flow, dumps the notch panel's hit-test map,
+            // and caches every open window (or the notch itself) to PNG — with its key and
+            // first-responder state in the log — without Screen Recording.
+            case "hittest": notch.debugHitTest()
+            case "snapshot": notch.debugSnapshot(to: comps?.queryItems?.first(where: { $0.name == "path" })?.value ?? "/tmp/avo-notch.png")
             case "onboarding": OnboardingWindow.shared.show()
             case "windows": DebugVerification.snapshotWindows(to: comps?.queryItems?.first(where: { $0.name == "dir" })?.value ?? "/tmp/avo-ui/live")
             case "click":
@@ -149,7 +151,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 p.arguments = ["-c", "for i in {1..25}; do pgrep -x Avo >/dev/null || break; sleep 0.2; done; sleep 0.5; for i in {1..5}; do open /Applications/Avo.app 2>/dev/null && break; sleep 0.5; done"]
                 try? p.run()
                 NSApp.terminate(nil)
-            case "snapshot": notch.debugSnapshot(to: comps?.queryItems?.first(where: { $0.name == "path" })?.value ?? "/tmp/avo-notch.png")
             default: break
             }
         }

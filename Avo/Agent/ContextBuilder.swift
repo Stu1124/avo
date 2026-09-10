@@ -266,6 +266,13 @@ final class ScreenCapture: @unchecked Sendable {
         }
     }
 
+    /// Writes a JPEG into the screenshots folder and returns its path.
+    ///
+    /// Nothing is deleted here. `Retention` owns this folder: it keeps everything until the user
+    /// picks a limit in Settings → Data, which is what "keep forever" on that screen promises. A cap
+    /// applied at write time contradicted it, and — because the user's own pasted and dropped images
+    /// live in the same folder — quietly took attachments away mid-conversation. Composer images are
+    /// named `attach-…` so the sweep can leave them alone.
     func save(_ cg: CGImage, name: String) -> String? {
         let dir = Paths.screenshotsDir
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -273,12 +280,6 @@ final class ScreenCapture: @unchecked Sendable {
         let rep = NSBitmapImageRep(cgImage: cg)
         guard let data = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.6]) else { return nil }
         try? data.write(to: url)
-        // keep the folder small
-        if let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.creationDateKey]), files.count > 30 {
-            for f in files.sorted(by: { ((try? $0.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast) < ((try? $1.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast) }).prefix(files.count - 30) {
-                try? FileManager.default.removeItem(at: f)
-            }
-        }
         return url.path
     }
 }

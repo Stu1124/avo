@@ -52,14 +52,21 @@ final class SettingsWindow {
                                         permissions: permissions, preview: VoicePreview.shared)
             let w = DarkWindow.make(title: "Avo", size: NSSize(width: 760, height: 560), content: root)
             closeObserver = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: w, queue: .main) { [weak self] _ in
-                Task { @MainActor in
-                    self?.permissions.stop()
-                    VoicePreview.shared.stop()
-                }
+                Task { @MainActor in self?.windowClosed() }
             }
             window = w
         }
         DarkWindow.present(window!)
+    }
+
+    /// The observer is scoped to one window, so it has to go when that window does — otherwise the
+    /// next `show()` registers a second one on top of a registration for a window that no longer
+    /// exists, and every close after that runs the teardown once per open.
+    private func windowClosed() {
+        permissions.stop()
+        VoicePreview.shared.stop()
+        if let o = closeObserver { NotificationCenter.default.removeObserver(o); closeObserver = nil }
+        window = nil
     }
 }
 
@@ -95,7 +102,7 @@ struct SettingsRootView: View {
     @ViewBuilder private var page: some View {
         switch SettingsPage(rawValue: nav.page) ?? .general {
         case .general: GeneralPage(s: settings)
-        case .voice: VoicePage(s: settings, preview: preview)
+        case .voice: VoicePage(s: settings, preview: preview, voice: VoiceModeSession.shared)
         case .apps: AppsPage(model: tools)
         case .google: GooglePage()
         case .coding: CodingPage(s: settings)

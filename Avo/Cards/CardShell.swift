@@ -330,7 +330,7 @@ struct MiniDayTimeline: View {
                         .fill(b.isNew ? b.color : b.color.opacity(0.28))
                         .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(b.color.opacity(b.isNew ? 0 : 0.5), lineWidth: 0.7))
                         .overlay(alignment: .topLeading) {
-                            Text(b.isNew ? (b.title) : b.title).font(Theme.text(10, b.isNew ? .semibold : .medium))
+                            Text(b.title).font(Theme.text(10, b.isNew ? .semibold : .medium))
                                 .foregroundStyle(b.isNew ? .white : Theme.ink).lineLimit(2).padding(.horizontal, 5).padding(.top, 3)
                         }
                         .frame(width: max(20, laneWidth - 3), height: h)

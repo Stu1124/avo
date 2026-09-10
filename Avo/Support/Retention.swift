@@ -29,7 +29,7 @@ enum Retention {
         guard days > 0 else { return 0 }
         let cutoff = Date().addingTimeInterval(-Double(days) * 86_400)
         var removed = 0
-        for url in screenshotFiles() {
+        for url in screenshotFiles() where !isAttachment(url) {
             guard let modified = try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
                   modified < cutoff else { continue }
             if (try? FileManager.default.removeItem(at: url)) != nil { removed += 1 }
@@ -47,6 +47,10 @@ enum Retention {
         }
         return (files.count, bytes)
     }
+
+    /// Images the user put in the composer themselves (pasted or dropped) share the folder but are
+    /// not Avo's captures, so the screenshot retention limit does not apply to them.
+    private static func isAttachment(_ url: URL) -> Bool { url.lastPathComponent.hasPrefix("attach-") }
 
     private static func screenshotFiles() -> [URL] {
         (try? FileManager.default.contentsOfDirectory(at: Paths.screenshotsDir,
@@ -70,10 +74,24 @@ enum Retention {
 @MainActor
 enum Diagnostics {
     /// What is cut out of the log copy, and why: `LogRedaction`.
-    static func redactingSpokenText(_ log: String) -> String { LogRedaction.apply(to: log) }
+    nonisolated static func redactingSpokenText(_ log: String) -> String { LogRedaction.apply(to: log) }
 
     /// Writes `~/Desktop/Avo-diagnostics-<date>.zip` and returns it.
-    static func export(redactSpokenText: Bool = true) throws -> URL {
+    ///
+    /// Nothing here belongs on the main actor: it reads and rewrites a log that can be megabytes,
+    /// then blocks on `ditto`. Run on the main actor it froze the window for the whole export, so the
+    /// button's spinner never drew a frame. Only the settings snapshot needs the main actor, so it is
+    /// taken (and serialised, which makes it `Sendable`) before the work moves off.
+    nonisolated static func export(redactSpokenText: Bool = true) async throws -> URL {
+        let dump = try await MainActor.run {
+            try JSONSerialization.data(withJSONObject: settingsDump(), options: [.prettyPrinted, .sortedKeys])
+        }
+        return try await Task.detached(priority: .userInitiated) {
+            try writeArchive(settings: dump, redactSpokenText: redactSpokenText)
+        }.value
+    }
+
+    nonisolated private static func writeArchive(settings dump: Data, redactSpokenText: Bool) throws -> URL {
         let stamp = ISO8601DateFormatter.diagnosticsDay.string(from: Date())
         let staging = FileManager.default.temporaryDirectory
             .appendingPathComponent("Avo-diagnostics-\(stamp)-\(UUID().uuidString.prefix(6))", isDirectory: true)
@@ -89,7 +107,6 @@ enum Diagnostics {
                 try? FileManager.default.copyItem(at: log, to: stagedLog)
             }
         }
-        let dump = try JSONSerialization.data(withJSONObject: settingsDump(), options: [.prettyPrinted, .sortedKeys])
         try dump.write(to: staging.appendingPathComponent("settings.json"))
 
         let destination = Paths.home.appendingPathComponent("Desktop/Avo-diagnostics-\(stamp).zip")
@@ -152,7 +169,7 @@ enum Diagnostics {
         ]
         // Presence, never the value. `writingStyle` and `userName` are the user's own words, so they
         // are described rather than copied.
-        out["secrets"] = ["openai", "gemini", "fish", "xai", "google_client_id", "google_refresh"]
+        out["secrets"] = ["openai", "gemini", "google_client_id", "google_refresh"]
             .reduce(into: [String: Bool]()) { $0[$1] = !(Keychain.get($1) ?? "").isEmpty }
         out["persona"] = ["hasUserName": !s.userName.isEmpty, "writingStyleCharacters": s.writingStyle.count]
         return out

@@ -44,7 +44,18 @@ final class PCMPlayer: @unchecked Sendable {
         node.scheduleBuffer(buf, at: nil, options: [], completionCallbackType: .dataPlayedBack) { [weak self] _ in
             self?.completed(gen)
         }
-        if !engine.isRunning { try? engine.start() }
+        // The engine can be stopped underneath us between `start()` and here — a configuration
+        // change or a device swap resets it on another thread — and AVAudioPlayerNode.play() raises
+        // an uncatchable NSException when its engine is not running. Restart it, then re-check;
+        // the buffer stays scheduled and the next chunk retries.
+        if !engine.isRunning {
+            engine.prepare()
+            do { try engine.start() } catch {
+                Log.warn("Voice playback: output restart failed (\(error.localizedDescription))")
+                return
+            }
+        }
+        guard engine.isRunning else { return }
         if !node.isPlaying { node.play() }
     }
 

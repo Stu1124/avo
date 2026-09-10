@@ -191,7 +191,10 @@ struct DateTimeField: View {
             }
         }
         .animation(Theme.springQuick, value: expanded)
-        .onAppear { write() }
+        // Only normalise a value that is already there. Writing unconditionally stamped
+        // `roundedSoon()` into an optional datetime the user had deliberately left blank — a
+        // reminder with no due date came back from the card with one, chosen by nobody.
+        .onAppear { if !iso.trimmingCharacters(in: .whitespaces).isEmpty { write() } }
     }
     private func write() { iso = ScheduleISO.string(date, allDay: false) }
 }

@@ -4,7 +4,6 @@ import SwiftUI
 struct NotchRoot: View {
     @ObservedObject var model: NotchModel
     let controller: NotchController
-    @State private var hovering = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -14,7 +13,6 @@ struct NotchRoot: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onHover { h in
-            hovering = h
             if model.hoverPinned != h { model.hoverPinned = h }
         }
     }
@@ -24,7 +22,6 @@ struct NotchRoot: View {
 struct NotchSurface: View {
     @ObservedObject var model: NotchModel
     let controller: NotchController
-    @State private var peek = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var notchWidth: CGFloat { NSScreen.notchScreen.notchRect.width }
     private var notchHeight: CGFloat { max(30, NSScreen.notchScreen.notchRect.height) }
@@ -39,20 +36,20 @@ struct NotchSurface: View {
         let hover = !expanded && !busy && model.collapsedHover
         // Reduce Motion keeps the glow — it is the part that says "clickable" — and drops the growth.
         let lift: CGFloat = hover && !reduceMotion ? 1 : 0
-        let collapsedHeight = notchHeight + (peek ? 6 : 0) + lift * 2
+        let collapsedHeight = notchHeight + lift * 4
         // Listening should read as a subtle extension of the hardware, not an opened window.
         let listeningWidth = max(notchWidth + 44, 320)
-        let width: CGFloat = expanded ? (listening ? listeningWidth : (compact ? 360 : NotchController.expandedWidth)) : notchWidth + lift * 6
+        let width: CGFloat = expanded ? (listening ? listeningWidth : (compact ? 360 : NotchController.expandedWidth)) : notchWidth + lift * 12
         ZStack(alignment: .top) {
-            NotchShape(topRadius: expanded ? 14 : 8, bottomRadius: expanded ? Theme.radiusNotch : (peek ? 14 : 12))
+            NotchShape(topRadius: expanded ? 14 : 8, bottomRadius: expanded ? Theme.radiusNotch : 12)
                 .fill(Color.black)
-                .shadow(color: hover ? Theme.accent.opacity(0.18) : .clear, radius: 6, x: 0, y: 2)
+                .shadow(color: hover ? Theme.accent.opacity(0.26) : .clear, radius: 8, x: 0, y: 2)
                 .overlay(
-                    NotchShape(topRadius: expanded ? 14 : 8, bottomRadius: expanded ? Theme.radiusNotch : (peek ? 14 : 12))
+                    NotchShape(topRadius: expanded ? 14 : 8, bottomRadius: expanded ? Theme.radiusNotch : 12)
                         .fill(LinearGradient(colors: [Color.white.opacity(expanded ? 0.06 : 0), .clear], startPoint: .top, endPoint: .bottom))
                 )
                 .overlay(
-                    NotchShape(topRadius: expanded ? 14 : 8, bottomRadius: expanded ? Theme.radiusNotch : (peek ? 14 : 12))
+                    NotchShape(topRadius: expanded ? 14 : 8, bottomRadius: expanded ? Theme.radiusNotch : 12)
                         .stroke(Color.white.opacity(expanded ? 0.10 : 0), lineWidth: 0.8)
                 )
 
@@ -94,7 +91,6 @@ struct NotchSurface: View {
             controller.surfaceFrameChanged(f)
         }
         .fixedSize(horizontal: false, vertical: true)
-        .animation(Theme.springQuick, value: peek)
     }
 }
 
@@ -168,8 +164,3 @@ struct NotchShape: Shape {
     }
 }
 
-
-struct SurfaceFrameKey: PreferenceKey {
-    static var defaultValue: CGRect = .zero
-    static func reduce(value: inout CGRect, nextValue: () -> CGRect) { value = nextValue() }
-}

@@ -16,26 +16,39 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-# --exclude-dir matches a directory's *name*, not a path, so the internal planning notes — removed
-# from the public snapshot — are skipped by naming both directory names they use.
-# This script is excluded from its own passes: the comments above have to name the strings they
-# look for, and a gate that always reports itself is a gate nobody reads.
-EXCLUDES=(--exclude-dir=.git --exclude-dir=.superpowers --exclude-dir=superpowers
+# What ships is what is tracked, so inside a git work tree the gate scans tracked files only.
+# Untracked scratch and the ignored internal planning notes never reach a clone, and a gate that
+# reported them is a gate nobody reads. An extracted tarball has no git metadata, so the fallback
+# walks the tree instead, skipping the same directories by name (--exclude-dir matches a
+# directory's *name*, not a path).
+# This script is excluded from every pass: the comments here have to name the strings they look
+# for. The LICENSE copyright line is the one allowed personal string and is filtered out too.
+EXCLUDES=(--exclude-dir=.git --exclude-dir=.superpowers
           --exclude-dir=dist --exclude-dir=build --exclude=check-release.sh)
+EXTRA=()
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  scan() { git grep -nE "$@" -- . ':(exclude)scripts/check-release.sh' "${EXTRA[@]}" || true }
+  skip_changelog() { EXTRA=(':(exclude)CHANGELOG.md') }
+else
+  scan() { grep -rnE "$@" "${EXCLUDES[@]}" "${EXTRA[@]}" . || true }
+  skip_changelog() { EXTRA=(--exclude=CHANGELOG.md) }
+fi
+
 # BSD grep prints paths without a leading "./" and GNU grep prints them with one, so match both.
 NOT_LICENSE='(^\./)?LICENSE'
 
 fail=0
 
-names=$(grep -rniE 'aristu|sachdev|wiener|fogcity|voiceos' "${EXCLUDES[@]}" . | grep -vE "$NOT_LICENSE" || true)
-paths=$(grep -rnE '/Users/' "${EXCLUDES[@]}" . | grep -vE "$NOT_LICENSE" || true)
+names=$(scan -i 'aristu|sachdev|wiener|fogcity|voiceos' | grep -vE "$NOT_LICENSE" || true)
+paths=$(scan '/Users/' | grep -vE "$NOT_LICENSE" || true)
 hits=${${names}:+$names$'\n'}$paths
 hits=${hits%$'\n'}
 echo "=== personal strings ==="
 if [[ -n "$hits" ]]; then print -r -- "$hits"; fail=1; else echo "(none)"; fi
 
 # CHANGELOG.md keeps the single "formerly Halo" line that tells upgraders what this used to be.
-hits=$(grep -rniE 'halo' "${EXCLUDES[@]}" --exclude=CHANGELOG.md . | grep -vE "$NOT_LICENSE" || true)
+skip_changelog
+hits=$(scan -i 'halo' | grep -vE "$NOT_LICENSE" || true)
 echo "=== old product name (CHANGELOG.md excluded) ==="
 if [[ -n "$hits" ]]; then print -r -- "$hits"; fail=1; else echo "(none)"; fi
 

@@ -132,9 +132,18 @@ final class ToolRegistry {
         order.removeAll { names.contains($0) }
     }
     var all: [Tool] { order.compactMap { tools[$0] } }
+    private var disabledGroups: Set<String> { Set(UserDefaults.standard.stringArray(forKey: "disabledToolGroups") ?? []) }
     func enabled() -> [Tool] {
-        let disabled = Set(UserDefaults.standard.stringArray(forKey: "disabledToolGroups") ?? [])
+        let disabled = disabledGroups
         return all.filter { !disabled.contains($0.group) }
     }
+    /// Registered by name, whether or not its integration is switched on. Use it to look a tool up
+    /// for display; anything that is about to *run* one should use `enabledTool` instead.
     func tool(_ name: String) -> Tool? { tools[name] }
+    /// Registered and switched on. A scheduled action fires hours after it was set up, so the group
+    /// it belongs to may have been turned off in the meantime; running it anyway ignores the switch.
+    func enabledTool(_ name: String) -> Tool? {
+        guard let t = tools[name], !disabledGroups.contains(t.group) else { return nil }
+        return t
+    }
 }

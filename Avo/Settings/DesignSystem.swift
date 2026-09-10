@@ -641,24 +641,22 @@ struct KeyCap: View {
 // MARK: - Secret key field
 
 enum KeyProvider: String, CaseIterable, Identifiable {
-    case openAI, gemini, fish, xai
+    case openAI, gemini
     var id: String { rawValue }
     var title: String {
-        switch self { case .openAI: return "API key"; case .gemini: return "Gemini"; case .fish: return "Fish Audio"; case .xai: return "xAI" }
+        switch self { case .openAI: return "API key"; case .gemini: return "Gemini" }
     }
     var subtitle: String {
         switch self {
         case .openAI: return "Brain model. Voice mode needs OpenAI."
         case .gemini: return "Spoken replies (TTS)"
-        case .fish: return "Alternate voices"
-        case .xai: return "Grok models. Optional."
         }
     }
     var keychainKey: String {
-        switch self { case .openAI: return "openai"; case .gemini: return "gemini"; case .fish: return "fish"; case .xai: return "xai" }
+        switch self { case .openAI: return "openai"; case .gemini: return "gemini" }
     }
     var placeholder: String {
-        switch self { case .openAI: return "sk-…"; case .gemini: return "AIza…"; case .fish: return "Fish Audio API key"; case .xai: return "xai-…" }
+        switch self { case .openAI: return "sk-…"; case .gemini: return "AIza…" }
     }
     func read() -> String { Keychain.get(keychainKey) ?? "" }
     func write(_ v: String) {
@@ -681,12 +679,6 @@ enum KeyProvider: String, CaseIterable, Identifiable {
             var comps = URLComponents(string: "https://generativelanguage.googleapis.com/v1beta/models")!
             comps.queryItems = [.init(name: "key", value: k)]
             req = URLRequest(url: comps.url!)
-        case .fish:
-            req = URLRequest(url: URL(string: "https://api.fish.audio/wallet/self/api-credit")!)
-            req.setValue("Bearer \(k)", forHTTPHeaderField: "Authorization")
-        case .xai:
-            req = URLRequest(url: URL(string: "https://api.x.ai/v1/models")!)
-            req.setValue("Bearer \(k)", forHTTPHeaderField: "Authorization")
         }
         req.timeoutInterval = 15
         do {
@@ -962,13 +954,19 @@ final class PermissionsModel: ObservableObject {
         var s: [PermissionKind: PermissionStatus] = [:]
         for k in PermissionKind.allCases { s[k] = k.status() }
         guard s != status else { return }
+        // Both checks below are about what *changed*, so they have to read the old map. Publishing
+        // first and then comparing `status` to `s` compares the new map with itself and never fires.
+        let previous = status
+        status = s
         // Launch skips the audio warm-up while the microphone prompt is unanswered, because touching
         // the input graph then blocks the main actor. This poll is the first thing that sees the
         // grant, from either the onboarding permissions step or Settings → Permissions.
-        let granted = status[.microphone] != .granted && s[.microphone] == .granted
-        status = s
-        if granted { Transcriber.shared.permissionDidChange() }
-        if PermissionKind.allCases.contains(where: { status[$0] != .granted && s[$0] == .granted }) {
+        if previous[.microphone] != .granted && s[.microphone] == .granted {
+            Transcriber.shared.permissionDidChange()
+        }
+        // A grant means the user was just in System Settings; onboarding has to come back in front
+        // of it or the first-run flow is left stranded behind another app's window.
+        if PermissionKind.allCases.contains(where: { previous[$0] != .granted && s[$0] == .granted }) {
             OnboardingWindow.shared.comeForward()
         }
     }

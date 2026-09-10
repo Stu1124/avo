@@ -222,7 +222,12 @@ struct MCPTool: Tool, @unchecked Sendable {
 
     func run(_ args: [String: Any], ctx: ToolContext) async -> ToolResult {
         guard let client = await MCPServers.shared.client(for: server) else { return .fail("MCP server '\(server)' is not configured.") }
-        let a = repair(args)
+        // `show` is ours: `Tool.openAIDefinition` adds it to every read tool so the model can ask for
+        // a card. The server never declared it, and a strict schema validator rejects the call, so it
+        // must not travel any further than this process.
+        var stripped = args
+        stripped["show"] = nil
+        let a = repair(stripped)
         do {
             let res = try await client.callTool(remoteName, arguments: a)
             return Self.result(res, tool: remoteName, server: server)

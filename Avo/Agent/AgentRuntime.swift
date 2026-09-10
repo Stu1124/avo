@@ -22,7 +22,6 @@ final class AgentRuntime {
     /// Set by the notch when a request begins while the previous reply is still on screen, or when
     /// the user reopens an exchange from the side notch. Either means "continue this chat".
     var requestBeganWhileOpen = false
-    func markFollowUp() { requestBeganWhileOpen = true }
     /// The user reopened a past exchange from the side notch: make it the current chat so the next
     /// request continues it (text only; the original screenshot is not resent).
     /// Groups History entries; a fresh id whenever a request starts a new chat.
@@ -393,6 +392,10 @@ final class AgentRuntime {
             }
             var card = QuestionCard(id: id, icon: icon, title: title, body: body, options: options, allowFreeText: freeText)
             card.onAnswer = finish
+            // Two agents can ask at once. Dropping the previous entry stranded its continuation —
+            // that tool waited forever, and its card could no longer be answered by voice. Close the
+            // old question with an empty answer (what a dismissal gives) before taking its place.
+            if let previous = pendingQuestion { previous.resolve("") }
             pendingQuestion = (id, finish)
             notch.present(.question(card), id: id)
             notch.reveal()
@@ -418,7 +421,6 @@ final class AgentRuntime {
         }
     }
 
-    func resetConversation() { conversation = [] }
 
     private func friendly(_ e: String) -> String {
         if e.contains("401") || e.lowercased().contains("invalid api key") { return "API key rejected by \(URL(string: Settings.shared.apiBaseURL)?.host ?? "the provider")." }
@@ -429,26 +431,3 @@ final class AgentRuntime {
     }
 }
 
-/// Cheap local intent checks so "yes" / "no" / "think hard" never need a model round trip.
-enum QuickIntent {
-    static func confirmDecision(_ t: String) -> ConfirmationCard.Decision? {
-        let s = t.lowercased().trimmingCharacters(in: .punctuationCharacters).trimmingCharacters(in: .whitespaces)
-        let yes = ["yes", "yeah", "yep", "yup", "confirm", "send", "send it", "do it", "go", "go ahead", "sure", "ok", "okay", "looks good", "perfect", "yes send it", "yes do it", "correct", "that's right", "ship it"]
-        let no = ["no", "nope", "cancel", "don't", "dont", "stop", "never mind", "nevermind", "no cancel", "scrap it", "not now", "abort"]
-        if yes.contains(s) { return .confirm([:]) }
-        if no.contains(s) { return .cancel }
-        return nil
-    }
-    /// Writing requests get the full voice skill in the instructions; everything else gets the summary.
-    static func wantsWriting(_ t: String) -> Bool {
-        let s = t.lowercased()
-        let cues = ["write", "draft", "reply", "respond", "email", "text ", "message", "compose", "rewrite", "reword",
-                    "shorten", "edit this", "fix this", "caption", "post", "dm ", "say to", "tell ", "essay", "letter", "note to"]
-        return cues.contains { s.contains($0) }
-    }
-
-    static func wantsDeep(_ t: String) -> Bool {
-        let s = t.lowercased()
-        return s.contains("think hard") || s.contains("think harder") || s.contains("think deeply") || s.contains("deep mode") || s.contains("take your time")
-    }
-}

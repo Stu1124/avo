@@ -180,16 +180,6 @@ enum NotesApp {
         }.joined(separator: "\n")
     }
 
-    /// Fallback for HTML bodies (reads normally use `plaintext`).
-    static func textFromHTML(_ html: String) -> String {
-        var s = html.replacingOccurrences(of: "(?i)<br\\s*/?>", with: "\n", options: .regularExpression)
-        s = s.replacingOccurrences(of: "(?i)</(div|p|li|h[1-6]|tr)>", with: "\n", options: .regularExpression)
-        s = s.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-        let entities = ["&nbsp;": " ", "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&#39;": "'", "&apos;": "'"]
-        for (k, v) in entities { s = s.replacingOccurrences(of: k, with: v) }
-        return s.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression).trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
     /// Notes' plaintext starts with the title line; drop it so the body is just the body.
     static func body(fromPlaintext p: String, title: String) -> String {
         var lines = p.components(separatedBy: "\n")

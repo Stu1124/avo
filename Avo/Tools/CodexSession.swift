@@ -10,7 +10,6 @@ final class CodexSession: CodingAgentSession, @unchecked Sendable {
     private(set) var threadId: String?
 
     var onEvent: ((CodingSessionEvent) -> Void)?
-    var isAlive: Bool { runner?.isRunning ?? false }
 
     private enum Transport { case appServer, exec }
     private var transport: Transport = .appServer

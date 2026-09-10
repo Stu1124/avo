@@ -11,7 +11,6 @@ enum CodingSessionEvent {
 
 protocol CodingAgentSession: AnyObject {
     var onEvent: ((CodingSessionEvent) -> Void)? { get set }
-    var isAlive: Bool { get }
     func start(message: String) throws
     func send(_ message: String)
     func stop()
@@ -27,7 +26,6 @@ final class ClaudeCodeSession: CodingAgentSession, @unchecked Sendable {
     private(set) var sessionId: String?
 
     var onEvent: ((CodingSessionEvent) -> Void)?
-    var isAlive: Bool { runner?.isRunning ?? false }
 
     private var runner: ProcessRunner?
     private let q = DispatchQueue(label: "avo.claude.session")
@@ -273,7 +271,6 @@ final class ClaudeCodeSession: CodingAgentSession, @unchecked Sendable {
     }
 
     static func permissionPrompt(tool: String, input: [String: Any], reason: String?) -> (String, String) {
-        let d = describe(tool: tool, input: input)
         var body = ""
         switch tool {
         case "Bash": body = input["command"] as? String ?? ""
@@ -288,7 +285,6 @@ final class ClaudeCodeSession: CodingAgentSession, @unchecked Sendable {
         case "WebFetch", "WebSearch": verb = "use the web"
         default: verb = "use \(tool)"
         }
-        _ = d
         return ("Claude Code wants to \(verb)", String(body.prefix(400)))
     }
 

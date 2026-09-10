@@ -58,7 +58,7 @@ enum DebugPreviews {
             ToolRegistry.shared.register(TextTools.all() + MemoryTools.all() + PresentTools.all() + CodingTools.all())
         }
         await render(AnyView(GeneralPage(s: s)), width: 660, path: "\(dir)/settings-general.png")
-        await render(AnyView(VoicePage(s: s, preview: VoicePreview.shared)), width: 660, path: "\(dir)/settings-voice.png")
+        await render(AnyView(VoicePage(s: s, preview: VoicePreview.shared, voice: VoiceModeSession.shared)), width: 660, path: "\(dir)/settings-voice.png")
         await render(AnyView(AppsPage(model: ToolGroupsModel())), width: 660, path: "\(dir)/settings-apps.png")
         await render(AnyView(GooglePage()), width: 660, path: "\(dir)/settings-google.png")
         await render(AnyView(CodingPage(s: s)), width: 660, path: "\(dir)/settings-coding.png")

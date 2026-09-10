@@ -159,13 +159,20 @@ final class LocalReminderScheduler {
         return r
     }
 
-    func update(id: String, message: String?, fireAt: Date?, repeatRule: String?, url: String?) -> LocalReminder? {
+    /// `revive` belongs to `resume_scheduled_item`, the only caller allowed to put a retired reminder
+    /// back on the schedule (pausing one cancels it). An ordinary edit must not: renaming or retiming
+    /// a reminder the user had already dismissed used to silently re-arm it.
+    func update(id: String, message: String?, fireAt: Date?, repeatRule: String?, url: String?, revive: Bool = false) -> LocalReminder? {
         guard let i = reminders.firstIndex(where: { $0.id == id }) else { return nil }
+        let retired = reminders[i].status == "cancelled" || reminders[i].status == "done"
         if let m = message { reminders[i].message = m }
-        if let f = fireAt { reminders[i].fireAt = f; reminders[i].status = "scheduled" }
+        if let f = fireAt {
+            reminders[i].fireAt = f
+            if !retired { reminders[i].status = "scheduled" }
+        }
         if let rr = repeatRule, Self.validRepeats.contains(rr) { reminders[i].repeatRule = rr }
         if let u = url { reminders[i].url = u.isEmpty ? nil : u }
-        if reminders[i].status == "cancelled" || reminders[i].status == "done" { reminders[i].status = "scheduled" }
+        if retired && revive { reminders[i].status = "scheduled" }
         save()
         removeCard(id)
         armTimer()
@@ -218,6 +225,9 @@ final class LocalReminderScheduler {
 
     // MARK: helpers
 
+    /// The first occurrence of `rule` strictly after `now`, or nil when there is none — a
+    /// non-recurring rule, or a base date so far behind that the step limit runs out. Returning a
+    /// date in the past would arm a timer that fires immediately, again and again.
     static func nextOccurrence(after now: Date, from base: Date, rule: String) -> Date? {
         let cal = Calendar.current
         var d = base
@@ -233,7 +243,7 @@ final class LocalReminderScheduler {
             }
             guardCount += 1
         }
-        return d
+        return d > now ? d : nil
     }
 
     static func tomorrowMorning() -> Date {
@@ -359,6 +369,9 @@ enum LocalReminderTools {
                 return .fail("No reminder with id \(id).", guidance: "Call avo_list_scheduled to find the right id.")
             }
             var j = r.json(); j["ok"] = true
+            if r.status == "cancelled" || r.status == "done" {
+                j["note"] = "This reminder is \(r.status). The edit was saved but did not put it back on the schedule — use resume_scheduled_item for that."
+            }
             return .ok(j, cards: [LocalReminderTools.card(r, title: "Reminder updated")])
         }
     }

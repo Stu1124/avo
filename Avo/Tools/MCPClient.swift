@@ -39,6 +39,9 @@ actor MCPClient {
     private(set) var lastUsed = Date()
     private var nextId = 1
     private var pending: [Int: CheckedContinuation<[String: Any], Error>] = [:]
+    /// Request ids whose caller already gave up. `send` retires them instead of parking a
+    /// continuation nobody is waiting on.
+    private var abandoned: Set<Int> = []
     private var idleTask: Task<Void, Never>?
     private var connecting: Task<Void, Error>?
 
@@ -96,6 +99,7 @@ actor MCPClient {
         process = nil; stdinHandle = nil; buffer = Data()
         for (_, c) in pending { c.resume(throwing: MCPError("\(config.name) stopped")) }
         pending = [:]
+        abandoned = []
     }
 
     // MARK: connection
@@ -148,12 +152,28 @@ actor MCPClient {
             guard let reply else { throw MCPError("\(config.name): empty reply to \(method)") }
             return try Self.unwrap(reply, server: config.name)
         }
-        let reply: [String: Any] = try await withTimeout(seconds: timeout) {
-            try await withCheckedThrowingContinuation { cont in
-                Task { await self.send(msg, id: id, cont: cont) }
+        let reply: [String: Any]
+        do {
+            reply = try await withTimeout(seconds: timeout) {
+                try await withCheckedThrowingContinuation { cont in
+                    Task { await self.send(msg, id: id, cont: cont) }
+                }
             }
+        } catch {
+            // The timeout unwinds this call but leaves the request parked in `pending`: nothing ever
+            // resumes its continuation, and a non-empty `pending` also tells `idleExpired` the server
+            // is still working, so the process is pinned open for the rest of the session. Retire the
+            // request here, and mark the id in case `send` has not run yet.
+            retire(id, reason: "\(config.name): \(method) timed out after \(Int(timeout))s")
+            throw error
         }
         return try Self.unwrap(reply, server: config.name)
+    }
+
+    /// Fails one in-flight request, whether or not its continuation has been parked yet.
+    private func retire(_ id: Int, reason: String) {
+        if let c = pending.removeValue(forKey: id) { c.resume(throwing: MCPError(reason)) }
+        else { abandoned.insert(id) }
     }
 
     private func notify(_ method: String, params: [String: Any]) async throws {
@@ -221,6 +241,7 @@ actor MCPClient {
     }
 
     private func send(_ msg: [String: Any], id: Int, cont: CheckedContinuation<[String: Any], Error>) {
+        if abandoned.remove(id) != nil { cont.resume(throwing: MCPError("\(config.name): request \(id) was abandoned")); return }
         pending[id] = cont
         do { try write(msg) } catch { pending[id] = nil; cont.resume(throwing: error) }
     }

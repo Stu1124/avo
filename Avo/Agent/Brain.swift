@@ -1,6 +1,6 @@
 import Foundation
 
-enum BrainStyle: String { case responses, chat, foundation }
+enum BrainStyle: String { case responses, chat }
 
 /// Chooses the BrainClient for the configured provider style.
 enum Brain {
@@ -20,8 +20,6 @@ enum Brain {
         switch st {
         case .responses: c = ResponsesClient()
         case .chat: c = ChatCompletionsClient()
-        // `.foundation` is reserved for an on-device model and currently maps to the chat client.
-        case .foundation: c = ChatCompletionsClient()
         }
         cache[st] = c
         return c

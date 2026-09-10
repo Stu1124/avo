@@ -218,7 +218,8 @@ final class CodingTaskStore {
     func dismiss(_ id: String) {
         dismissed.insert(id)
         UserDefaults.standard.set(Array(dismissed), forKey: Self.dismissedKey)
-        SideNotch.shared.upsert(task(id) ?? tasks[0])
+        // `task(id)` is nil once the row has been pruned, and `tasks` can be empty by then.
+        if let t = task(id) ?? tasks.first { SideNotch.shared.upsert(t) }
     }
     func dismissAllDone() {
         for t in tasks where !t.isActive { dismissed.insert(t.id) }

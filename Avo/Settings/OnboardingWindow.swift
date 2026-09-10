@@ -51,10 +51,7 @@ final class OnboardingWindow {
                 content.layer?.masksToBounds = true
             }
             closeObserver = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: w, queue: .main) { [weak self] _ in
-                Task { @MainActor in
-                    self?.permissions.stop()
-                    VoicePreview.shared.stop()
-                }
+                Task { @MainActor in self?.windowClosed() }
             }
             window = w
         }
@@ -62,12 +59,20 @@ final class OnboardingWindow {
         DarkWindow.present(window!)
     }
 
+    /// The observer is scoped to one window, so it has to go when that window does. `show()` builds a
+    /// fresh window every time the flow is reopened, and each one used to add another registration.
+    private func windowClosed() {
+        permissions.stop()
+        VoicePreview.shared.stop()
+        if let o = closeObserver { NotificationCenter.default.removeObserver(o); closeObserver = nil }
+        window = nil
+    }
+
     private func finish() {
         Settings.shared.onboarded = true
         Sounds.shared.play(.done)
-        permissions.stop()
         window?.close()
-        window = nil
+        windowClosed()
         Log.info("Onboarding finished")
     }
 }

@@ -107,8 +107,15 @@ enum Spotify {
             for (k, v) in extra { j[k] = v }
             return .ok(j, cards: [card(s, title: title)])
         } catch {
-            var j: [String: Any] = ["ok": true]; for (k, v) in extra { j[k] = v }
-            return .ok(j)
+            // Only the follow-up read failed here — the command, if there was one, already went out.
+            // Reporting ok anyway told the model everything worked, and it narrated a state nobody
+            // had managed to read.
+            var j: [String: Any] = ["ok": false, "error": "Spotify did not answer: \(error)"]
+            for (k, v) in extra { j[k] = v }
+            j["guidance"] = extra.isEmpty
+                ? "Tell the user Spotify did not answer. If macOS asked for Automation permission, they need to allow Avo to control Spotify."
+                : "The command was sent; only the follow-up state read failed. Say that much, and do not send the command again."
+            return ToolResult(json: j, cards: [], ok: false)
         }
     }
 

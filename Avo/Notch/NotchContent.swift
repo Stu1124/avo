@@ -7,7 +7,6 @@ struct NotchContent: View {
     @ObservedObject private var settings = Settings.shared
     let controller: NotchController
 
-    @State private var bodyHeight: CGFloat = 0
     private var bodyCap: CGFloat { NotchController.maxHeight - 110 }
 
     var body: some View {
@@ -563,7 +562,7 @@ struct ComposerView: View {
         if let urls = pb.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
             for u in urls where !model.attachments.contains(u.path) { model.attachments.append(u.path); added = true }
         } else if let img = NSImage(pasteboard: pb), let tiff = img.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff), let cg = rep.cgImage,
-                  let path = ScreenCapture.shared.save(cg, name: "pasted") {
+                  let path = ScreenCapture.shared.save(cg, name: "attach-pasted") {
             model.attachments.append(path); added = true
         }
         if added { Sounds.shared.play(.tick) }
@@ -594,7 +593,7 @@ struct ComposerView: View {
                 any = true
                 p.loadObject(ofClass: NSImage.self) { obj, _ in
                     guard let img = obj as? NSImage, let tiff = img.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff), let cg = rep.cgImage else { return }
-                    if let path = ScreenCapture.shared.save(cg, name: "dropped") { DispatchQueue.main.async { model.attachments.append(path); Sounds.shared.play(.tick) } }
+                    if let path = ScreenCapture.shared.save(cg, name: "attach-dropped") { DispatchQueue.main.async { model.attachments.append(path); Sounds.shared.play(.tick) } }
                 }
             }
         }
@@ -622,7 +621,3 @@ struct AttachmentChip: View {
 }
 
 
-struct BodyHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}

@@ -9,6 +9,25 @@ enum CodingTools {
     static let claudeIcon = "asset:ClaudeCodeIcon"
     static let codexIcon = "asset:CodexIcon"
 
+    // MARK: default agent
+
+    /// Settings → Coding → Default agent. Read straight from UserDefaults so a tool description can
+    /// consult it from any context; `Settings.codingDefaultAgent` writes the same key.
+    static var defaultAgent: String {
+        UserDefaults.standard.string(forKey: "codingDefaultAgent") == "codex" ? "codex" : "claude"
+    }
+
+    /// The half of a dispatch tool's description that says who takes an unnamed request. Descriptions
+    /// are rebuilt for every turn, so changing the picker changes where the next "have someone look at
+    /// this" lands without a restart.
+    static func routingRule(for agent: String) -> String {
+        let other = agent == "codex" ? "dispatch_claude_code" : "dispatch_codex"
+        let otherName = agent == "codex" ? "Claude Code" : "Codex"
+        return defaultAgent == agent
+            ? "It is also the user's default coding agent, so take any coding request that names no agent at all — 'get someone to look at the build script in my blog'."
+            : "When the user names no agent at all, use \(other) instead: \(otherName) is their default coding agent."
+    }
+
     // MARK: shared dispatch
 
     static let dispatchParams: [ToolParam] = [
@@ -105,7 +124,11 @@ enum CodingTools {
 
     struct DispatchClaudeCode: Tool {
         let name = "dispatch_claude_code"
-        let description = "Start a Claude Code coding task in a project folder on this Mac and return immediately; the agent works in the background and its result pops up on the notch when it finishes (the user answers its questions and permission prompts by voice or click). Use it whenever the user wants code written, fixed, refactored, explained, reviewed, tested, or a repo investigated — 'have Claude fix the login bug in avo', 'ask Claude Code to add tests', 'get Claude to look at the build script in my blog'. Use dispatch_codex only when the user names Codex. Give a standalone instruction: the agent cannot see this conversation. Current-turn screen context is attached automatically when the user refers to it. No confirmation is needed — dispatching is safe; the agent asks before anything destructive."
+        var description: String {
+            "Start a Claude Code coding task in a project folder on this Mac and return immediately; the agent works in the background and its result pops up on the notch when it finishes (the user answers its questions and permission prompts by voice or click). Use it whenever the user names Claude for code written, fixed, refactored, explained, reviewed, tested, or a repo investigated — 'have Claude fix the login bug in avo', 'ask Claude Code to add tests'. "
+            + CodingTools.routingRule(for: "claude")
+            + " Give a standalone instruction: the agent cannot see this conversation. Current-turn screen context is attached automatically when the user refers to it. No confirmation is needed — dispatching is safe; the agent asks before anything destructive."
+        }
         let params = CodingTools.dispatchParams
         let statusLabel = "Starting Claude Code"
         let statusIcon = CodingTools.claudeIcon
@@ -115,7 +138,11 @@ enum CodingTools {
 
     struct DispatchCodex: Tool {
         let name = "dispatch_codex"
-        let description = "Start an OpenAI Codex coding task in a project folder on this Mac and return immediately; Codex works in the background and its result pops up on the notch when it finishes (the user answers its questions and approval prompts by voice or click). Use it when the user says Codex — 'have Codex refactor the parser in avo', 'ask Codex to review this'. For unspecified 'coding agent' requests prefer dispatch_claude_code unless the user's default agent is Codex. Give a standalone instruction: Codex cannot see this conversation. Current-turn screen context is attached automatically when the user refers to it. No confirmation is needed — dispatching is safe; Codex runs in a workspace sandbox and asks before leaving it."
+        var description: String {
+            "Start an OpenAI Codex coding task in a project folder on this Mac and return immediately; Codex works in the background and its result pops up on the notch when it finishes (the user answers its questions and approval prompts by voice or click). Use it when the user names Codex — 'have Codex refactor the parser in avo', 'ask Codex to review this'. "
+            + CodingTools.routingRule(for: "codex")
+            + " Give a standalone instruction: Codex cannot see this conversation. Current-turn screen context is attached automatically when the user refers to it. No confirmation is needed — dispatching is safe; Codex runs in a workspace sandbox and asks before leaving it."
+        }
         let params = CodingTools.dispatchParams
         let statusLabel = "Starting Codex"
         let statusIcon = CodingTools.codexIcon

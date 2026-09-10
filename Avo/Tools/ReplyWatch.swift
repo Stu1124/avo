@@ -245,7 +245,6 @@ final class ReplyWatch {
 
     // MARK: API used by tools
 
-    func find(_ id: String) -> ReplyWatchItem? { watches.first { $0.id == id } }
 
     /// Watching and paused, newest first.
     func listActive() -> [ReplyWatchItem] { watches.filter(\.isListed).sorted { $0.sentAt > $1.sentAt } }

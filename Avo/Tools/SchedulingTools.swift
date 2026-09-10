@@ -94,7 +94,7 @@ enum SchedulingTools {
                 let raw = JSON.string(args["tool_arguments"]) ?? ""
                 return .fail(raw.isEmpty ? "tool_arguments is required." : "tool_arguments is not a JSON object.", guidance: "Pass the complete arguments for \(inner) as a JSON object.")
             }
-            let tool = await MainActor.run { ToolRegistry.shared.tool(inner) }
+            let tool = await MainActor.run { ToolRegistry.shared.enabledTool(inner) }
             guard let tool else { return .fail("\(inner) is not available (integration disabled).", guidance: "Tell the user that integration is turned off in Avo settings.") }
             let missing = tool.params.filter { $0.required && toolArgs.str($0.name) == nil && (toolArgs[$0.name] as? [Any])?.isEmpty != false }.map(\.name)
             if !missing.isEmpty {
@@ -286,7 +286,7 @@ enum SchedulingTools {
                     if r.status == "scheduled" { var j = r.json(); j["kind"] = "reminder"; j["note"] = "Already active."; return j }
                     // Recurring: skip to the next occurrence. One-shot: keep its time; if it passed it fires now as overdue.
                     let next = r.repeats ? LocalReminderScheduler.nextOccurrence(after: Date(), from: r.fireAt, rule: r.repeatRule) : nil
-                    guard let u = sched.update(id: id, message: nil, fireAt: next, repeatRule: nil, url: nil) else { return nil }
+                    guard let u = sched.update(id: id, message: nil, fireAt: next, repeatRule: nil, url: nil, revive: true) else { return nil }
                     var j = u.json(); j["kind"] = "reminder"; return j
                 }
             }

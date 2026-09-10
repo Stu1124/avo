@@ -1,14 +1,16 @@
 import Foundation
 import AppKit
+import SwiftUI
 
 /// Live voice mode: mic ↔ OpenAI Realtime ↔ speaker, with the same tools and confirmation gating as the text brain.
 /// Everything is torn down on stop; nothing is retained while inactive.
 @MainActor
-final class VoiceModeSession {
+final class VoiceModeSession: ObservableObject {
     static let shared = VoiceModeSession()
     private let notch = NotchController.shared
 
-    private(set) var isActive = false
+    /// Published so Settings can label its button for what the button will actually do.
+    @Published private(set) var isActive = false
     private var client: RealtimeClient?
     private var mic: MicCapture?
     private var player: PCMPlayer?

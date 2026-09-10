@@ -134,12 +134,12 @@ Open with the menu bar item, **⌘,**, or `open "avo://settings"`. Eight pages.
 - *Scopes*: what sign-in will request, read-only.
 
 **Coding**
-- *Default agent*: Claude Code or Codex, used when you do not name one.
+- *Default agent*: Claude Code or Codex. Naming an agent out loud always wins; this is who takes a request that names none.
 - *Auto-approve*: skip permission prompts inside the coding agent.
 - *Detected CLIs*: where Avo found `claude` and `codex` in your login shell's PATH, read-only.
 
-**Keys**: Gemini, Fish Audio and xAI keys, each with show/hide and a Test button. The brain's own key
-lives in General → Model. Avo stores all of them in the macOS Keychain.
+**Keys**: the Gemini key for spoken replies, with show/hide and a Test button. The brain's own key
+lives in General → Model. Avo stores both in the macOS Keychain.
 
 **Permissions**: the ten rows described above, with live status.
 

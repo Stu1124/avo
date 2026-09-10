@@ -170,7 +170,6 @@ final class EmailMonitorService {
         return m
     }
 
-    func find(_ id: String) -> EmailMonitorItem? { monitors.first { $0.id == id } }
     func listActive() -> [EmailMonitorItem] { monitors.filter(\.isListed).sorted { $0.createdAt > $1.createdAt } }
 
     func cancel(id: String) -> EmailMonitorItem? {

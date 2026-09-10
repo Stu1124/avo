@@ -95,7 +95,7 @@ final class NotchController {
 
     /// How far below the collapsed notch still counts as hovering it, so drifting under the notch
     /// on the way to clicking it already gets a reaction.
-    static let hoverSlack: CGFloat = 14
+    static let hoverSlack: CGFloat = 18
 
     /// The clickable notch plus that slack. Purely a hover region: hit-testing still uses `collapsedRect`.
     static func hoverRect() -> NSRect {
@@ -557,14 +557,6 @@ final class NotchController {
             Log.info("Snapshot \(w.title.isEmpty ? "notch" : w.title) → \(p)")
             i += 1
         }
-    }
-
-    func focusKeyboard() {
-        panel.makeKeyAndOrderFront(nil)
-    }
-
-    func releaseKeyboard() {
-        panel.resignKey()
     }
 }
 

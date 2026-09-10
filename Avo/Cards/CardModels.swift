@@ -2,7 +2,7 @@ import Foundation
 
 /// Editable confirmation before an acting tool runs. Fields bind to tool arguments.
 struct ConfirmationCard: Identifiable {
-    enum FieldKind { case text, multiline, datetime, select([String]), toggle, chips }
+    enum FieldKind { case text, multiline, datetime, select([String]), toggle }
     /// Which app-shaped body renders the fields. `.generic` is the label/value list.
     enum Layout { case generic, reminder, event, email, reply, message, note }
     struct Field: Identifiable {

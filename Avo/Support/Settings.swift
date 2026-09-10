@@ -20,7 +20,7 @@ final class Settings: ObservableObject {
     // Provider
     /// Base URL of an OpenAI-compatible API. Responses style needs OpenAI; chat style works with Ollama, LM Studio, OpenRouter, Groq, xAI, and Anthropic's compat endpoint.
     @Published var apiBaseURL = "https://api.openai.com/v1" { didSet { save("apiBaseURL", apiBaseURL) } }
-    /// "responses" (OpenAI Responses API), "chat" (chat completions), "foundation" (Apple on-device, macOS 26).
+    /// "responses" (OpenAI Responses API) or "chat" (chat completions). Anything else reads as "chat".
     @Published var apiStyle = "responses" { didSet { save("apiStyle", apiStyle) } }
     /// Spoken replies: "apple" (on-device, no key) or "gemini".
     @Published var ttsEngine = "apple" { didSet { save("ttsEngine", ttsEngine) } }
@@ -196,8 +196,6 @@ final class Settings: ObservableObject {
     /// The brain provider's key. Same Keychain slot as `openAIKey` so existing installs keep working.
     nonisolated var apiKey: String? { get { openAIKey } set { openAIKey = newValue } }
     nonisolated var geminiKey: String? { get { Keychain.get("gemini") } set { Self.setSecret("gemini", newValue) } }
-    nonisolated var fishKey: String? { get { Keychain.get("fish") } set { Self.setSecret("fish", newValue) } }
-    nonisolated var xaiKey: String? { get { Keychain.get("xai") } set { Self.setSecret("xai", newValue) } }
     nonisolated var googleClientId: String? { get { Keychain.get("google_client_id") } set { Self.setSecret("google_client_id", newValue) } }
     nonisolated var googleClientSecret: String? { get { Keychain.get("google_client_secret") } set { Self.setSecret("google_client_secret", newValue) } }
     nonisolated var googleRefreshToken: String? {
