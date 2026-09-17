@@ -14,7 +14,7 @@ struct ArtifactFormatTests {
 
         // Table from object rows; columns inferred and sorted when omitted.
         let t2 = ArtifactFormat.table(from: [
-            "rows": [["city": "Paris", "temp": 18], ["city": "Oslo", "temp": 4]],
+            "rows": [["city": "Paris", "temp": 18] as [String: Any], ["city": "Oslo", "temp": 4] as [String: Any]],
         ])
         precondition(t2?.columns == ["city", "temp"], "Got \(String(describing: t2?.columns))")
         precondition(t2?.rows.first == ["Paris", "18"], "Got \(String(describing: t2?.rows))")
@@ -37,8 +37,8 @@ struct ArtifactFormatTests {
         guard case .bool(true) = items[2], case .null = items[3] else { preconditionFailure("bool/null") }
         precondition(JSONNode.parse(text: "not json") == nil)
 
-        let items: [[String: Any]] = [["label": "Mon", "value": 3], ["title": "Tue", "value": "4.5"]]
-        let chart = ArtifactFormat.chartItems(items)
+        let series: [[String: Any]] = [["label": "Mon", "value": 3], ["title": "Tue", "value": "4.5"]]
+        let chart = ArtifactFormat.chartItems(series)
         precondition(chart.map(\.label) == ["Mon", "Tue"], "Got \(chart.map(\.label))")
         precondition(chart.map(\.value) == [3, 4.5], "Got \(chart.map(\.value))")
 

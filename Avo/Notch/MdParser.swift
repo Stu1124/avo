@@ -14,7 +14,7 @@ enum MdBlock {
     case thematicBreak
 }
 
-enum MdAlignment { case left, center, right }
+enum MdAlignment: Equatable { case left, center, right }
 
 // MARK: - Parser
 

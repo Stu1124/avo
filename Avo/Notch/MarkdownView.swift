@@ -123,20 +123,16 @@ struct HighlightedCode: View {
     var language: String?
 
     var body: some View {
-        Text(attributed)
+        codeText
             .font(.system(size: 12.5, design: .monospaced))
             .lineSpacing(2)
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var attributed: AttributedString {
-        var result = AttributedString()
-        for token in CodeHighlight.tokens(code, language: language) {
-            var piece = AttributedString(token.text)
-            piece.foregroundColor = NSColor(color(token.kind))
-            result.append(piece)
+    private var codeText: Text {
+        CodeHighlight.tokens(code, language: language).reduce(Text("")) { acc, token in
+            acc + Text(token.text).foregroundStyle(color(token.kind))
         }
-        return result
     }
 
     private func color(_ kind: CodeHighlight.Kind) -> Color {
