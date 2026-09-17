@@ -468,6 +468,7 @@ final class NotchController {
         collapseTimer = Timer.scheduledTimer(withTimeInterval: seconds, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
+                if VoiceModeSession.shared.isActive { return }
                 if self.model.hoverPinned || self.model.pendingConfirmationId != nil || self.model.showComposer { self.scheduleCollapse(after: 4); return }
                 self.collapse()
             }
@@ -476,6 +477,9 @@ final class NotchController {
 
     func collapse() {
         collapseTimer?.invalidate()
+        if VoiceModeSession.shared.isActive {
+            VoiceModeSession.shared.stop(reason: "collapsed")
+        }
         if model.showComposer {
             ContextBuilder.shared.discardDraft()
         }

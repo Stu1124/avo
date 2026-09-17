@@ -187,6 +187,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         h.onEscape = { [weak self] in
             guard let self else { return }
+            if VoiceModeSession.shared.isActive { self.notch.collapse(); return }
             if self.listening || self.finalizing { self.cancelListening(); return }
             guard self.notch.model.expanded else { return }
             AgentRuntime.shared.cancel(); Speech.shared.stop(); self.notch.collapse()
@@ -194,6 +195,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func beginListening() {
+        if VoiceModeSession.shared.isActive { return }
         guard !listening else { return }
         listenGeneration += 1
         let generation = listenGeneration

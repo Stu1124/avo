@@ -12,7 +12,8 @@ Bring your own model.
 Hold your talk key, speak, let go. Avo transcribes on this Mac, looks at your screen when the
 request needs it, and acts through your own apps: Messages, Gmail, Google Calendar, Reminders, Notes,
 Finder, Spotify, Google Drive, Claude Code and Codex, plus any MCP server you add. Anything that
-sends, creates or deletes something shows you an editable card first.
+sends, creates or deletes something shows you an editable card first. Ask it to put a table, JSON,
+code, a plan, or a chart on screen and it will.
 
 On macOS 26 you can skip the key and say **"Hey Avo"** instead. Avo matches the phrase on this Mac
 and sends nothing until it hears it. Hands-free stays off until you turn it on in

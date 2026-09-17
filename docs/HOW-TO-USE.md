@@ -16,7 +16,9 @@
 
 **Voice replies:** off by default. Settings → Voice → Speak replies. The engine is Apple's on-device voice, which needs no key; Gemini is optional and needs a Gemini key. Preview either before choosing.
 
-**Voice mode (conversation):** menu bar → Voice Mode, or say "start voice mode". It runs on the OpenAI Realtime API, so it needs an OpenAI key and sends microphone audio to OpenAI for as long as the session is on. You can interrupt it, and it has the same tools. It ends on "that's all", 25 s of silence, or the toggle.
+**Voice mode (conversation):** menu bar → Voice Mode, Settings → Voice, or `open "avo://voice"`. It runs on the OpenAI Realtime API, so it needs an OpenAI key and sends microphone audio to OpenAI for as long as the session is on. The notch stays open as a live conversation: you see what you said, Avo's reply, and any cards. Mute or end from the notch; Esc ends it; say "that's all" / "stop voice mode". You can interrupt it, and it has the same tools (including tables, JSON, code and charts). It also ends after the silence timeout in Settings (25 s by default, or never).
+
+**Artifacts:** ask Avo to show a table, JSON, a code snippet, a formatted plan, or a small chart. Those land as cards you can copy from. Reply bubbles also render markdown tables and highlighted code.
 
 **Coding agents:** "have Claude fix the flaky test in my-project" / "run Codex on the notes project to …". Progress in the side of the notch; permission questions arrive as cards you answer by voice or click. "Stop it" stops the open task.
 
@@ -116,7 +118,9 @@ Open with the menu bar item, **⌘,**, or `open "avo://settings"`. Eight pages.
 - *Voice*: the Gemini prebuilt voice, with a Preview button on both engines.
 - *Style*: how the Gemini voice should sound; prepended to every line.
 - *Realtime model*: the model voice mode uses.
-- *Start voice mode*: begins a hands-open conversation. Also in the menu bar.
+- *Voice*: which OpenAI realtime voice speaks during the session.
+- *End after silence*: 15 / 25 / 45 / 90 seconds, or never.
+- *Start voice mode*: begins a hands-open conversation. Mute and end live from the notch. Also in the menu bar.
 - *Listen for a wake word*: on-device hands-free listening (macOS 26 and later).
 - *Wake word*: the phrase. "Hey Avo", "OK Avo" and "Avo" always work.
 - *Status*: what the wake-word listener is doing.

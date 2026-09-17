@@ -210,6 +210,7 @@ struct VoicePage: View {
 
     private static let ttsModels = ["gemini-3.1-flash-tts-preview", "gemini-2.5-flash-preview-tts"]
     private static let realtimeModels = ["gpt-realtime-2.1", "gpt-realtime-2.1-mini"]
+    private static let realtimeVoices = ["cedar", "marin", "coral", "verse", "ballad", "alloy", "ash", "echo", "sage", "shimmer"].map { (id: $0, label: $0.capitalized) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
@@ -240,11 +241,22 @@ struct VoicePage: View {
                     }
                 }
             }
-            SectionCard(title: "Voice mode", footer: "Voice mode keeps the microphone open for a back-and-forth conversation until you end it.") {
+            SectionCard(title: "Voice mode", footer: "Keeps the microphone open for a back-and-forth until you end it, say “that's all”, or it times out. Spoken replies above apply to hold-to-talk; Voice mode uses OpenAI realtime audio.") {
                 PickerRow(title: "Realtime model", selection: $s.realtimeModel, options: Self.realtimeModels)
-                // The pill toggles, so it has to say which way. Labelled "Start voice mode" while a
-                // session was running, it read as a no-op and stopping it looked like a bug.
-                ActionRow(title: voice.isActive ? "Voice mode is running" : "Start voice mode", subtitle: "Also available from the menu bar.") {
+                PickerRow(title: "Voice", subtitle: "The voice OpenAI speaks with during the session.", selection: $s.realtimeVoice, options: Self.realtimeVoices)
+                PickerRow(title: "End after silence", subtitle: "Stops the session when nobody has spoken.",
+                          selection: Binding(
+                            get: { String(s.voiceSilenceSeconds) },
+                            set: { s.voiceSilenceSeconds = Int($0) ?? 25 }
+                          ),
+                          options: [
+                            (id: "15", label: "15 seconds"),
+                            (id: "25", label: "25 seconds"),
+                            (id: "45", label: "45 seconds"),
+                            (id: "90", label: "90 seconds"),
+                            (id: "0", label: "Never"),
+                          ])
+                ActionRow(title: voice.isActive ? "Voice mode is running" : "Start voice mode", subtitle: "Also available from the menu bar. Mute and end live from the notch.") {
                     DSPill(voice.isActive ? "Stop voice mode" : "Start voice mode",
                            icon: voice.isActive ? "stop.fill" : "waveform",
                            style: voice.isActive ? .destructive : .primary) { voice.toggle() }
@@ -275,7 +287,7 @@ final class ToolGroupsModel: ObservableObject {
     static let known: [(name: String, icon: String)] = [
         ("iMessage", "app:com.apple.MobileSMS"), ("Reminders", "app:com.apple.reminders"), ("Finder", "app:com.apple.finder"),
         ("Apps", "app.dashed"), ("Spotify", "app:com.spotify.client"), ("Gmail", "envelope.fill"), ("Calendar", "calendar"),
-        ("Drive", "externaldrive.fill"), ("Coding", "sparkles"), ("Text", "text.cursor"), ("Memory", "brain"), ("Notes", "app:com.apple.Notes"), ("Scheduling", "clock.badge"), ("MCP", "puzzlepiece.extension"),
+        ("Drive", "externaldrive.fill"), ("Coding", "sparkles"), ("Text", "text.cursor"), ("Memory", "brain"), ("Notes", "app:com.apple.Notes"), ("Scheduling", "clock.badge"), ("Avo", "sparkle"), ("MCP", "puzzlepiece.extension"),
     ]
 
     @Published private(set) var disabled: Set<String>

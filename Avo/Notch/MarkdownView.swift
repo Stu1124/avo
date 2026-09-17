@@ -1,7 +1,8 @@
 import SwiftUI
+import AppKit
 
 /// Block-level markdown renderer for Avo's response bubbles.
-/// Handles headings, fenced code blocks, bullet/numbered lists, blockquotes,
+/// Handles headings, fenced code blocks, GFM tables, bullet/numbered lists, blockquotes,
 /// display/inline LaTeX math, and regular paragraphs with inline formatting.
 struct MarkdownView: View {
     let source: String
@@ -32,24 +33,10 @@ struct MarkdownView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
         case .code(let language, let code):
-            VStack(alignment: .leading, spacing: 0) {
-                if let lang = language, !lang.isEmpty {
-                    Text(lang)
-                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(Theme.ink3)
-                        .padding(.horizontal, 10).padding(.top, 7).padding(.bottom, 4)
-                }
-                Text(code)
-                    .font(.system(size: 12.5, design: .monospaced))
-                    .foregroundStyle(Theme.ink)
-                    .lineSpacing(2)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, language != nil ? 4 : 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.line, lineWidth: 0.8))
+            CodeBlockView(language: language, code: code)
+
+        case .table(let headers, let rows, let alignments):
+            MarkdownTableView(headers: headers, rows: rows, alignments: alignments, fontSize: max(11, baseFontSize - 2))
 
         case .list(let ordered, let items):
             VStack(alignment: .leading, spacing: 4) {
@@ -85,6 +72,127 @@ struct MarkdownView: View {
         }
     }
 
+}
+
+/// Fenced code with a language chip, copy control, and token colouring.
+struct CodeBlockView: View {
+    var language: String?
+    var code: String
+    @State private var copied = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                if let lang = language, !lang.isEmpty {
+                    Text(lang)
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(Theme.ink3)
+                }
+                Spacer(minLength: 0)
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(code, forType: .string)
+                    copied = true
+                    Sounds.shared.play(.tick)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { copied = false }
+                } label: {
+                    Text(copied ? "Copied" : "Copy")
+                        .font(Theme.text(10, .semibold))
+                        .foregroundStyle(copied ? Theme.good : Theme.ink3)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Copy code")
+            }
+            .padding(.horizontal, 10).padding(.top, 7).padding(.bottom, 4)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HighlightedCode(code: code, language: language)
+                    .textSelection(.enabled)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.line, lineWidth: 0.8))
+    }
+}
+
+struct HighlightedCode: View {
+    var code: String
+    var language: String?
+
+    var body: some View {
+        Text(attributed)
+            .font(.system(size: 12.5, design: .monospaced))
+            .lineSpacing(2)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var attributed: AttributedString {
+        var result = AttributedString()
+        for token in CodeHighlight.tokens(code, language: language) {
+            var piece = AttributedString(token.text)
+            piece.foregroundColor = NSColor(color(token.kind))
+            result.append(piece)
+        }
+        return result
+    }
+
+    private func color(_ kind: CodeHighlight.Kind) -> Color {
+        switch kind {
+        case .plain: return Theme.ink
+        case .keyword: return Color(red: 0.78, green: 0.55, blue: 1.0)
+        case .string: return Color(red: 0.55, green: 0.86, blue: 0.62)
+        case .comment: return Theme.ink3
+        case .number: return Color(red: 1.0, green: 0.72, blue: 0.38)
+        case .typeName: return Color(red: 0.45, green: 0.78, blue: 1.0)
+        case .punctuation: return Theme.ink2
+        }
+    }
+}
+
+struct MarkdownTableView: View {
+    var headers: [String]
+    var rows: [[String]]
+    var alignments: [MdAlignment]
+    var fontSize: CGFloat
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
+                GridRow {
+                    ForEach(Array(headers.enumerated()), id: \.offset) { i, h in
+                        InlineMarkdownText(source: h, size: fontSize, weight: .semibold)
+                            .frame(maxWidth: .infinity, alignment: align(i))
+                            .padding(.horizontal, 8).padding(.vertical, 6)
+                    }
+                }
+                .background(Theme.fill2)
+                ForEach(Array(rows.enumerated()), id: \.offset) { r, row in
+                    GridRow {
+                        ForEach(Array(row.enumerated()), id: \.offset) { i, cell in
+                            InlineMarkdownText(source: cell, size: fontSize)
+                                .frame(maxWidth: .infinity, alignment: align(i))
+                                .padding(.horizontal, 8).padding(.vertical, 5)
+                        }
+                    }
+                    .background(r.isMultiple(of: 2) ? Color.clear : Theme.fill1)
+                }
+            }
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.line, lineWidth: 0.8))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+    }
+
+    private func align(_ i: Int) -> Alignment {
+        guard i < alignments.count else { return .leading }
+        switch alignments[i] {
+        case .left: return .leading
+        case .center: return .center
+        case .right: return .trailing
+        }
+    }
 }
 
 // MARK: - LaTeX → Unicode math renderer

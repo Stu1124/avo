@@ -180,6 +180,7 @@ final class ContextBuilder {
             case .task(let t): return "OPEN CODING TASK CARD: id=\(t.taskId) agent=\(t.agent) title=\(t.title) status=\(t.status)"
             case .reminder(let r): return "ACTIVE NOTIFICATION CARD: reminder id=\(r.reminderId) message=\(r.message)"
             case .draft(let d): return "STAGED DRAFT CARD: \(d.title)"
+            case .artifact(let a): return "OPEN ARTIFACT CARD: kind=\(a.kind.rawValue) title=\(a.title)"
             default: return nil
             }
         }

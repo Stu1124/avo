@@ -14,6 +14,7 @@ struct CardView: View {
             case .task(let t): TaskCardView(card: t)
             case .reminder(let r): ReminderCardView(card: r)
             case .question(let q): QuestionCardView(card: q)
+            case .artifact(let a): ArtifactCardView(card: a)
             }
         }
         .padding(14)

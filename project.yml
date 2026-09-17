@@ -53,7 +53,7 @@ targets:
         NSHighResolutionCapable: true
         CFBundleIconName: AppIcon
         CFBundleIconFile: Avo
-        NSMicrophoneUsageDescription: Avo listens while you hold your talk key.
+        NSMicrophoneUsageDescription: Avo listens while you hold your talk key and during Voice mode.
         NSSpeechRecognitionUsageDescription: Avo transcribes your voice on this Mac.
         NSRemindersFullAccessUsageDescription: Avo reads and creates your reminders.
         NSCalendarsFullAccessUsageDescription: Avo reads your calendars.

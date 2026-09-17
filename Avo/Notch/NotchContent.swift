@@ -12,21 +12,27 @@ struct NotchContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
+            if model.voiceModeActive {
+                VoiceSessionBar(model: model)
+            }
             // Body scrolls only when it is taller than the cap; its true height is measured inside the scroll view
             // so the window can size itself from content rather than the other way round.
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(model.priorTurns) { t in
                         PriorTurnView(turn: t)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                     if !model.transcript.isEmpty || model.phase == .listening {
-                        TranscriptView(text: model.transcript, listening: model.phase == .listening, level: model.audioLevel)
+                        TranscriptView(text: model.transcript, listening: model.phase == .listening, level: model.audioLevel,
+                                       muted: model.voiceMuted)
                     }
                     if model.phase == .thinking && model.responseText.isEmpty && model.statusChips.isEmpty {
                         ThinkingLine()
                     }
                     if !model.responseText.isEmpty {
                         ResponseBubble(text: model.responseText, speaking: model.speaking)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                     if let err = model.errorText {
                         Text(err).font(Theme.text(13)).foregroundStyle(Theme.bad).padding(.horizontal, 4)
@@ -36,12 +42,20 @@ struct NotchContent: View {
                     }
                     ForEach(model.cards) { card in
                         CardView(card: card, controller: controller)
-                            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .opacity))
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .top).combined(with: .opacity),
+                                removal: .move(edge: .top).combined(with: .opacity)
+                            ))
                     }
                     if model.showComposer {
                         ComposerView(model: model, controller: controller)
                     }
+                    if model.phase == .idle && model.responseText.isEmpty && model.cards.isEmpty && model.priorTurns.isEmpty && !model.showComposer && !model.voiceModeActive {
+                        IdleHint()
+                    }
                 }
+                .animation(Theme.springCard, value: model.cards.map(\.id))
+                .animation(Theme.springQuick, value: model.priorTurns.map(\.id))
             }
             .frame(maxHeight: bodyCap)
             .fixedSize(horizontal: false, vertical: true)
@@ -56,6 +70,7 @@ struct NotchContent: View {
             Text(headerTitle)
                 .font(Theme.text(12, .medium))
                 .foregroundStyle(Theme.ink3)
+                .contentTransition(.interpolate)
             Spacer()
             if model.deepMode {
                 Text("Deep")
@@ -70,9 +85,20 @@ struct NotchContent: View {
             }.buttonStyle(.plain).keyboardShortcut(.escape, modifiers: [])
         }
         .padding(.horizontal, 2)
+        .animation(Theme.springQuick, value: model.phase)
     }
 
     private var headerTitle: String {
+        if model.voiceModeActive {
+            if model.voiceMuted { return "Muted" }
+            switch model.phase {
+            case .listening: return model.microphoneReady ? "Listening" : "Connecting"
+            case .thinking: return "Thinking"
+            case .responding: return "Speaking"
+            case .error: return "Something went wrong"
+            default: return "Voice mode"
+            }
+        }
         switch model.phase {
         case .idle: return model.showComposer ? "Type to Avo" : "Hold \(settings.talkKeyLabel) and talk"
         case .listening: return "Listening"
@@ -170,15 +196,60 @@ struct NotchActivityMark: View {
     }
 }
 
+/// Live voice-mode chrome: waveform plus mute and end. The header already names the phase.
+struct VoiceSessionBar: View {
+    @ObservedObject var model: NotchModel
+    @ObservedObject private var voice = VoiceModeSession.shared
+
+    var body: some View {
+        HStack(spacing: 10) {
+            VoiceRibbon(level: model.voiceMuted ? 0 : model.audioLevel, live: model.phase == .listening || model.phase == .responding)
+                .frame(height: 22)
+            Text(voice.elapsedLabel)
+                .font(Theme.text(11, .medium).monospacedDigit())
+                .foregroundStyle(Theme.ink3)
+                .frame(width: 36, alignment: .trailing)
+            Button {
+                voice.setMuted(!voice.muted)
+            } label: {
+                Image(systemName: voice.muted ? "mic.slash.fill" : "mic.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(voice.muted ? Theme.bad : Theme.ink2)
+                    .frame(width: 24, height: 24)
+                    .background(voice.muted ? Theme.bad.opacity(0.16) : Theme.fill1, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .help(voice.muted ? "Unmute" : "Mute")
+            .accessibilityLabel(voice.muted ? "Unmute microphone" : "Mute microphone")
+            Button {
+                voice.stop(reason: "ended from notch")
+            } label: {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 24, height: 24)
+                    .background(Theme.fill2, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .help("End voice mode")
+            .accessibilityLabel("End voice mode")
+        }
+        .padding(.horizontal, 4)
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+}
+
 /// Speech ribbon shown beside the mark while listening: three sine layers, each with its own
 /// frequency and drift, tapered at both ends, amplitude from the mic. Idle amplitude is small
 /// but never zero, so silence reads as a resting line, not a dead one.
 struct VoiceRibbon: View {
     var level: Float
+    var live: Bool = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 40.0)) { ctx in
-            let t = ctx.date.timeIntervalSinceReferenceDate
+        TimelineView(.animation(minimumInterval: 1.0 / 40.0, paused: reduceMotion || !live)) { ctx in
+            let t = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate
             let l = 0.1 + Double(min(max(level, 0), 1)) * 0.9
             Canvas { g, size in
                 let mid = size.height / 2
@@ -203,6 +274,7 @@ struct VoiceRibbon: View {
                 }
             }
         }
+        .accessibilityLabel("Voice level")
     }
 }
 
@@ -225,11 +297,17 @@ struct TranscriptView: View {
     var text: String
     var listening: Bool
     var level: Float
+    var muted: Bool = false
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            if listening { Waveform(level: level).frame(width: 26, height: 18).padding(.top, 3) }
-            // The prompt is context, not the point: small and dim so the reply below reads first.
-            Text(text.isEmpty ? "…" : text)
+            if listening {
+                if muted {
+                    Image(systemName: "mic.slash.fill").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.bad).padding(.top, 4)
+                } else {
+                    Waveform(level: level).frame(width: 26, height: 18).padding(.top, 3)
+                }
+            }
+            Text(text.isEmpty ? (muted ? "Microphone muted" : "…") : text)
                 .font(Theme.text(listening ? 15 : 13, .regular))
                 .foregroundStyle(text.isEmpty ? Theme.ink3 : (listening ? Theme.ink : Theme.ink3))
                 .lineLimit(listening ? 6 : 3)
@@ -262,7 +340,7 @@ struct Waveform: View {
                         .shadow(color: Theme.accent.opacity(Double(min(level, 1)) * 0.5), radius: 2)
                 }
             }
-            .animation(.easeOut(duration: 0.09), value: level)
+            .animation(Theme.springQuick, value: level)
         }
         .frame(height: maxHeight)
     }
@@ -369,7 +447,7 @@ struct ResponseBubble: View {
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
-            if speaking { Image(systemName: "speaker.wave.2.fill").font(.system(size: 11)).foregroundStyle(Theme.ink3).padding(.top, 3) }
+            if speaking { Image(systemName: "speaker.wave.2.fill").font(.system(size: 11)).foregroundStyle(Theme.ink3).padding(.top, 3).transition(.opacity.combined(with: .scale(scale: 0.6))) }
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
         .background(Theme.fill1, in: RoundedRectangle(cornerRadius: Theme.radiusCard, style: .continuous))
@@ -408,9 +486,11 @@ struct ChipsRow: View {
                     .overlay(Capsule().strokeBorder(c.state == .running ? Theme.accent.opacity(0.25) : Theme.line, lineWidth: 0.8))
                     .animation(Theme.springQuick, value: c.state)
                     .fixedSize()
+                    .transition(.asymmetric(insertion: .move(edge: .leading).combined(with: .opacity), removal: .opacity))
                     .background(GeometryReader { g in Color.clear.preference(key: ChipFrameKey.self, value: [c.id: g.frame(in: .global)]) })
                 }
             }
+            .animation(Theme.springQuick, value: chips.map(\.id))
         }
         .frame(height: 26)
         .padding(.horizontal, 2)
@@ -493,6 +573,7 @@ struct ComposerView: View {
                     HStack(spacing: 6) {
                         ForEach(model.attachments, id: \.self) { p in
                             AttachmentChip(path: p) { model.attachments.removeAll { $0 == p } }
+                                .transition(.move(edge: .leading).combined(with: .opacity))
                         }
                     }
                 }
@@ -524,6 +605,7 @@ struct ComposerView: View {
         .padding(.horizontal, 12).padding(.vertical, 8)
         .background(Theme.fill1, in: RoundedRectangle(cornerRadius: Theme.radiusField, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Theme.radiusField, style: .continuous).strokeBorder(dropTargeted ? Theme.accent : Theme.lineStrong, lineWidth: dropTargeted ? 1.2 : 0.8))
+        .animation(Theme.springQuick, value: dropTargeted)
         .onDrop(of: [.fileURL, .image], isTargeted: $dropTargeted) { providers in handleDrop(providers) }
         .defaultFocus($focused, true)
         .fileImporter(isPresented: $model.isChoosingAttachments, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in

@@ -10,8 +10,11 @@ enum MdBlock {
     case list(ordered: Bool, items: [String])
     case blockquote(text: String)
     case mathBlock(latex: String)
+    case table(headers: [String], rows: [[String]], alignments: [MdAlignment])
     case thematicBreak
 }
+
+enum MdAlignment { case left, center, right }
 
 // MARK: - Parser
 
@@ -59,6 +62,17 @@ enum MdParser {
                 while codeLines.last?.trimmingCharacters(in: .whitespaces).isEmpty == true { codeLines.removeLast() }
                 blocks.append(.code(language: lang.isEmpty ? nil : lang, code: codeLines.joined(separator: "\n")))
                 continue
+            }
+
+            // GFM table: a pipe row followed by a separator row.
+            if trimmed.hasPrefix("|") || trimmed.contains("|") {
+                let next = (i + 1 < lines.count) ? lines[i + 1].trimmingCharacters(in: .whitespaces) : ""
+                if isTableSeparator(next) {
+                    let (block, nextIndex) = parseTable(lines: lines, from: i)
+                    if let block { blocks.append(block) }
+                    i = max(nextIndex, i + 1)
+                    continue
+                }
             }
 
             // Heading: # through ###### followed by a space
@@ -132,6 +146,10 @@ enum MdParser {
                 if bulletContent(lt) != nil { break }
                 if numberedContent(lt) != nil { break }
                 if lt.hasPrefix(">") { break }
+                if lt.hasPrefix("|") || lt.contains("|") {
+                    let next = (i + 1 < lines.count) ? lines[i + 1].trimmingCharacters(in: .whitespaces) : ""
+                    if isTableSeparator(next) { break }
+                }
                 paraLines.append(lt)
                 i += 1
             }
@@ -184,6 +202,65 @@ enum MdParser {
         idx = trimmed.index(after: idx)
         guard idx < trimmed.endIndex, trimmed[idx].isWhitespace else { return nil }
         return String(trimmed[idx...]).trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Split a GFM table row into cells. Leading and trailing pipes are optional.
+    static func tableCells(_ line: String) -> [String] {
+        var s = line.trimmingCharacters(in: .whitespaces)
+        if s.hasPrefix("|") { s.removeFirst() }
+        if s.hasSuffix("|") { s.removeLast() }
+        return s.split(separator: "|", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) }
+    }
+
+    /// A separator row is cells made of dashes, optionally wrapped in colons for alignment.
+    static func isTableSeparator(_ trimmed: String) -> Bool {
+        guard trimmed.contains("|") else { return false }
+        let cells = tableCells(trimmed)
+        guard !cells.isEmpty else { return false }
+        return cells.allSatisfy { cell in
+            let t = cell.trimmingCharacters(in: .whitespaces)
+            guard t.count >= 3 else { return false }
+            var seenDash = false
+            for ch in t {
+                if ch == "-" { seenDash = true; continue }
+                if ch == ":" { continue }
+                return false
+            }
+            return seenDash
+        }
+    }
+
+    static func tableAlignment(_ cell: String) -> MdAlignment {
+        let t = cell.trimmingCharacters(in: .whitespaces)
+        let left = t.hasPrefix(":")
+        let right = t.hasSuffix(":")
+        if left && right { return .center }
+        if right { return .right }
+        return .left
+    }
+
+    private static func parseTable(lines: [String], from start: Int) -> (MdBlock?, Int) {
+        let headers = tableCells(lines[start])
+        guard start + 1 < lines.count else { return (nil, start + 1) }
+        let alignments = tableCells(lines[start + 1]).map { tableAlignment($0) }
+        var rows: [[String]] = []
+        var i = start + 2
+        while i < lines.count {
+            let trimmed = lines[i].trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty { break }
+            if !trimmed.contains("|") { break }
+            if isTableSeparator(trimmed) { break }
+            var cells = tableCells(trimmed)
+            if cells.count < headers.count {
+                cells.append(contentsOf: Array(repeating: "", count: headers.count - cells.count))
+            } else if cells.count > headers.count {
+                cells = Array(cells.prefix(headers.count))
+            }
+            rows.append(cells)
+            i += 1
+        }
+        guard !headers.isEmpty else { return (nil, i) }
+        return (.table(headers: headers, rows: rows, alignments: alignments), i)
     }
 
     private static func isThematicBreak(_ trimmed: String) -> Bool {

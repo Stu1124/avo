@@ -177,6 +177,31 @@ enum DebugPreviews {
         await renderNotchSurface(m, controller, dir: dir, name: "card-question")
 
         m.reset()
+        m.expanded = true
+        m.phase = .done
+        m.transcript = "Compare the options"
+        m.responseText = "Two flights fit.\n\n| Flight | Leaves | Stops |\n| --- | --- | --- |\n| BA 178 | 7:15 | 0 |\n| DL 404 | 11:40 | 1 |"
+        m.cards = [AnyCard(id: tableSample.id, kind: .artifact(tableSample))]
+        await renderNotchSurface(m, controller, dir: dir, name: "card-table")
+
+        m.reset()
+        m.expanded = true
+        m.phase = .done
+        m.transcript = "Show me that payload"
+        m.cards = [AnyCard(id: jsonSample.id, kind: .artifact(jsonSample))]
+        await renderNotchSurface(m, controller, dir: dir, name: "card-json")
+
+        m.reset()
+        m.expanded = true
+        m.phase = .listening
+        m.voiceModeActive = true
+        m.microphoneReady = true
+        m.audioLevel = 0.45
+        m.transcript = "What's on tomorrow"
+        m.priorTurns = [.init(id: UUID(), user: "Start voice mode", reply: "I'm here.")]
+        await renderNotchSurface(m, controller, dir: dir, name: "notch-voice-mode")
+
+        m.reset()
     }
 
     private static func renderNotchSurface(_ m: NotchModel, _ c: NotchController, dir: String, name: String) async {
@@ -207,6 +232,17 @@ enum DebugPreviews {
         QuestionCard(id: UUID(), icon: "questionmark.circle", title: "Which flight?",
                      body: "Two options fit the window you gave me.",
                      options: ["7:15 AM, nonstop", "11:40 AM, one stop"], allowFreeText: true)
+    }
+
+    private static var tableSample: ArtifactCard {
+        ArtifactCard(id: UUID(), kind: .table, title: "Flights", subtitle: "Tomorrow morning",
+                     table: .init(columns: ["Flight", "Leaves", "Stops"],
+                                  rows: [["BA 178", "7:15 AM", "nonstop"], ["DL 404", "11:40 AM", "1 stop"]]))
+    }
+
+    private static var jsonSample: ArtifactCard {
+        ArtifactCard(id: UUID(), kind: .json, title: "Booking", language: "json",
+                     body: "{\n  \"from\": \"LHR\",\n  \"to\": \"JFK\",\n  \"when\": \"2026-09-18\"\n}")
     }
 
     // MARK: Renderer

@@ -32,7 +32,7 @@ struct SideNotchTab: View {
             .fill(color)
             .frame(width: SideNotch.tabWidth, height: SideNotch.tabHeight)
             .opacity(model.anyRunning ? (pulse ? 1 : 0.45) : 0.9)
-            .onAppear { withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { pulse = true } }
+            .onAppear { withAnimation(Theme.springPulse) { pulse = true } }
     }
 }
 
@@ -241,7 +241,7 @@ struct NeedsInputBadge: View {
         Text("Needs input").font(Theme.text(10, .semibold)).foregroundStyle(Theme.warn)
             .padding(.horizontal, 7).padding(.vertical, 3)
             .background(Theme.warn.opacity(pulse ? 0.3 : 0.12), in: Capsule())
-            .onAppear { withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { pulse = true } }
+            .onAppear { withAnimation(Theme.springPulse) { pulse = true } }
     }
 }
 

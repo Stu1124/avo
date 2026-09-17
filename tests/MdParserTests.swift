@@ -91,6 +91,21 @@ struct MdParserTests {
         guard case .mathBlock(let latex) = math.first else { preconditionFailure("Expected a math block") }
         precondition(latex == "a + b", "Got \(latex)")
 
+        // GFM tables: header, separator, rows. Alignment colons are recorded. Streaming prefixes terminate.
+        let tableSrc = "| Name | Age |\n| --- | ---: |\n| Ada | 36 |\n| Grace | 85 |\n"
+        let tableBlocks = parseWithDeadline(tableSrc, seconds: 5, "table")
+        guard case .table(let headers, let rows, let aligns) = tableBlocks.first else { preconditionFailure("Expected a table, got \(tableBlocks)") }
+        precondition(headers == ["Name", "Age"], "Got \(headers)")
+        precondition(rows == [["Ada", "36"], ["Grace", "85"]], "Got \(rows)")
+        precondition(aligns.count == 2 && aligns[1] == .right, "Got \(aligns)")
+        for length in 0...tableSrc.count {
+            _ = parseWithDeadline(String(tableSrc.prefix(length)), seconds: 5, "table prefix \(length)")
+        }
+        // A pipe line without a separator stays a paragraph, so half-streamed tables don't stall.
+        let half = parseWithDeadline("| Name | Age |", seconds: 5, "half table")
+        guard case .paragraph(let p) = half.first else { preconditionFailure("Expected a paragraph for an unfinished table") }
+        precondition(p.contains("Name"), "Got \(p)")
+
         // 10k lines, all of them the pathological `#`, finish well inside a second.
         let big = Array(repeating: "#", count: 10_000).joined(separator: "\n")
         let started = Date()
@@ -108,6 +123,6 @@ struct MdParserTests {
         precondition(mixedBlocks.count == 6_000, "Got \(mixedBlocks.count) blocks")
         precondition(mixedElapsed < 1.0, "10k mixed lines took \(mixedElapsed)s")
 
-        print("PASS: heading recognition, hash-prefixed body text, streamed prefixes, lists, fences, quotes, math, 10k-line throughput")
+        print("PASS: heading recognition, hash-prefixed body text, streamed prefixes, lists, fences, quotes, math, tables, 10k-line throughput")
     }
 }

@@ -50,7 +50,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Avo uses your location for nearby requests.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Avo listens while you hold your talk key.</string>
+	<string>Avo listens while you hold your talk key and during Voice mode.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>Avo reads and creates your reminders.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

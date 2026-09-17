@@ -11,6 +11,8 @@ final class VoiceModeSession: ObservableObject {
 
     /// Published so Settings can label its button for what the button will actually do.
     @Published private(set) var isActive = false
+    @Published private(set) var muted = false
+    @Published private(set) var elapsedLabel = "0:00"
     private var client: RealtimeClient?
     private var mic: MicCapture?
     private var player: PCMPlayer?
@@ -37,11 +39,23 @@ final class VoiceModeSession: ObservableObject {
     /// Confirmation card waiting for a click or a spoken yes/no.
     private var pendingConfirmation: (id: UUID, resolve: (ConfirmationCard.Decision, String?) -> Void)?
 
-    private static let silenceLimit: TimeInterval = 25
     private static let stopPhrases = ["stop voice mode", "end voice mode", "exit voice mode", "leave voice mode", "goodbye", "good bye", "that's all", "that is all", "thats all"]
 
     func toggle() {
         if isActive { stop(reason: "toggled off") } else { Task { await start() } }
+    }
+
+    func setMuted(_ on: Bool) {
+        guard isActive, muted != on else { return }
+        muted = on
+        notch.model.voiceMuted = on
+        client?.setAudioEnabled(!on && configured)
+        if on {
+            client?.send(["type": "input_audio_buffer.clear"])
+            notch.model.audioLevel = 0
+        }
+        lastActivity = Date()
+        Sounds.shared.play(.tick)
     }
 
     // MARK: lifecycle
@@ -69,10 +83,13 @@ final class VoiceModeSession: ObservableObject {
         failed = false; configured = false; responseInFlight = false; userSpeaking = false
         currentItemId = nil; responseText = ""; lastUserText = ""; pendingFunctionCalls = 0
         responseCreatePending = false; voiceUsed = false; triedLegacy = false
+        muted = false; elapsedLabel = "0:00"
         startedAt = Date(); lastActivity = Date()
 
         notch.beginListening(playSound: false)
         notch.model.transcript = ""
+        notch.model.voiceModeActive = true
+        notch.model.voiceMuted = false
         chipId = notch.status("Voice mode", icon: "waveform", id: UUID())
 
         guard await MicCapture.requestAccess() else {
@@ -82,7 +99,7 @@ final class VoiceModeSession: ObservableObject {
         // Instructions: same system prompt as the text brain, plus the live-mode rider.
         let snap = await ContextBuilder.shared.build(turnId: UUID(), transcript: "")
         instructions = SystemPrompt.build(compact: true)
-            + "\nYou are in live voice mode: speak naturally, brief, interruptible. Use tools the same way. Acting tools still show a confirmation card; wait for the user's yes before assuming it ran."
+            + "\nYou are in live voice mode: speak naturally, brief, interruptible. Use tools the same way, including present_table, present_json, present_code, present_markdown, present_chart and present_list when the user should see an artifact. Acting tools still show a confirmation card; wait for the user's yes before assuming it ran."
             + "\n\n" + ContextBuilder.shared.render(snap)
         toolDefs = ToolRegistry.shared.enabled().map { $0.openAIDefinition }
         guard isActive else { return }
@@ -94,9 +111,13 @@ final class VoiceModeSession: ObservableObject {
 
         let m = MicCapture(microphoneUID: Settings.shared.microphoneUID)
         m.onChunk = { [weak self] data in self?.client?.appendAudio(data) }
-        m.onLevel = { [weak self] lvl in Task { @MainActor in self?.notch.model.audioLevel = lvl } }
+        m.onLevel = { [weak self] lvl in Task { @MainActor in
+            guard let self, !self.muted else { return }
+            self.notch.model.audioLevel = lvl
+        } }
         do { try m.start() } catch { fail("Microphone failed: \(error.localizedDescription)"); return }
         mic = m
+        notch.model.microphoneReady = true
         Sounds.shared.play(.listenStart)
 
         connect(legacy: false)
@@ -110,6 +131,7 @@ final class VoiceModeSession: ObservableObject {
     func stop(reason: String = "stopped") {
         guard isActive else { return }
         isActive = false
+        muted = false
         let seconds = Int(Date().timeIntervalSince(startedAt))
         Log.info("Voice mode ended (\(reason)) after \(seconds / 60):\(String(format: "%02d", seconds % 60)) — session duration; billing is token-based")
         teardown()
@@ -119,6 +141,8 @@ final class VoiceModeSession: ObservableObject {
         }
         notch.model.speaking = false
         notch.model.audioLevel = 0
+        notch.model.voiceModeActive = false
+        notch.model.voiceMuted = false
         _ = notch.status("Voice mode · \(clock(seconds))", icon: "waveform", id: chipId, state: .done)
         Sounds.shared.play(.listenEnd)
         if !failed { notch.done(autoCollapseAfter: notch.model.cards.isEmpty ? 5 : 12) }
@@ -143,6 +167,7 @@ final class VoiceModeSession: ObservableObject {
         player?.shutdown(); player = nil
         instructions = ""; toolDefs = []
         responseInFlight = false; userSpeaking = false; configured = false
+        muted = false
     }
 
     private func connect(legacy: Bool) {
@@ -160,9 +185,11 @@ final class VoiceModeSession: ObservableObject {
     private func tick() {
         guard isActive else { return }
         let seconds = Int(Date().timeIntervalSince(startedAt))
-        _ = notch.status("Voice mode · \(clock(seconds))", icon: "waveform", id: chipId)
+        elapsedLabel = clock(seconds)
+        _ = notch.status("Voice mode · \(elapsedLabel)", icon: muted ? "mic.slash.fill" : "waveform", id: chipId)
         let idle = Date().timeIntervalSince(lastActivity)
-        if configured, !responseInFlight, !userSpeaking, pendingConfirmation == nil, player?.isPlaying != true, idle > Self.silenceLimit {
+        let limit = TimeInterval(max(0, Settings.shared.voiceSilenceSeconds))
+        if limit > 0, configured, !muted, !responseInFlight, !userSpeaking, pendingConfirmation == nil, player?.isPlaying != true, idle > limit {
             stop(reason: "silence")
         }
     }
@@ -179,19 +206,29 @@ final class VoiceModeSession: ObservableObject {
         case "session.updated":
             if !configured {
                 configured = true
-                client?.setAudioEnabled(true)
+                client?.setAudioEnabled(!muted)
                 lastActivity = Date()
+                notch.model.microphoneReady = true
                 notch.model.phase = .listening
             }
         case "input_audio_buffer.speech_started":
             userSpeaking = true
             lastActivity = Date()
             interruptPlayback()
+            if !notch.model.responseText.isEmpty {
+                notch.model.foldLiveTurn()
+            }
+            notch.model.transcript = ""
             notch.model.phase = .listening
         case "input_audio_buffer.speech_stopped":
             userSpeaking = false
             lastActivity = Date()
             if !responseInFlight && pendingConfirmation == nil { notch.model.phase = .thinking }
+        case "conversation.item.input_audio_transcription.delta":
+            if let d = ev["delta"] as? String, !d.isEmpty {
+                lastActivity = Date()
+                notch.model.transcript += d
+            }
         case "conversation.item.input_audio_transcription.completed":
             if let t = (ev["transcript"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty {
                 userTranscript(t)
@@ -252,7 +289,7 @@ final class VoiceModeSession: ObservableObject {
 
     private func sendSessionUpdate(createResponse: Bool) {
         guard let c = client else { return }
-        c.send(RealtimeClient.sessionUpdate(instructions: instructions, tools: toolDefs, voice: "cedar", legacy: c.legacy,
+        c.send(RealtimeClient.sessionUpdate(instructions: instructions, tools: toolDefs, voice: Settings.shared.realtimeVoice, legacy: c.legacy,
                                             createResponse: createResponse, includeVoice: !voiceUsed))
     }
 

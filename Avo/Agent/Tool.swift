@@ -88,7 +88,7 @@ extension Tool {
     var openAIDefinition: [String: Any] {
         var params = (self as? MCPTool)?.rawSchema ?? schema
         if confirmation == nil, var props = params["properties"] as? [String: Any], props["show"] == nil {
-            props["show"] = ["type": "boolean", "description": "Set true to display these results to the user as a card. Only when the user asked to see them (show/list/what are my…) or the list itself is the answer. Leave false when you are just reading data to answer a question; use present_list to show a hand-picked subset instead."]
+            props["show"] = ["type": "boolean", "description": "Set true to display these results to the user as a card. Only when the user asked to see them (show/list/what are my…) or the list itself is the answer. Leave false when you are just reading data to answer a question; use present_list, present_table, present_json, present_code, present_markdown or present_chart to show a hand-picked artifact instead."]
             params["properties"] = props
         }
         return ["type": "function", "name": name, "description": description, "parameters": params]

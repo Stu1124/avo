@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Voice mode is a real conversation in the notch: live captions, mute and end controls, the last turns stay on screen, Esc ends the session, and hold-to-talk no longer fights the microphone.
+- The model can put tables, JSON trees, highlighted code, markdown documents and small charts on screen (`present_table`, `present_json`, `present_code`, `present_markdown`, `present_chart`). Reply bubbles render GFM tables and coloured code.
+- Notch motion: card and chip enter/exit, phase changes, and status pulses use the same springs as the rest of the glass.
+
 ## 1.0.0 — 2026-09-09
 
 First public release. Formerly Halo.

@@ -136,3 +136,62 @@ struct QuestionCard: Identifiable {
     var revision = 0
     var onAnswer: ((String) -> Void)?
 }
+
+/// Model-produced artifact: a table, JSON tree, code, markdown document, or chart the user can inspect.
+struct ArtifactCard: Identifiable {
+    enum Kind: String { case table, json, code, markdown, chart }
+    enum ChartKind: String { case bars, line, stats }
+    struct Table {
+        var columns: [String]
+        var rows: [[String]]
+    }
+    struct ChartItem: Identifiable {
+        let id = UUID()
+        var label: String
+        var value: Double
+    }
+    let id: UUID
+    var kind: Kind
+    var title: String
+    var subtitle: String? = nil
+    var language: String? = nil
+    var body: String = ""
+    var table: Table? = nil
+    var chartKind: ChartKind = .bars
+    var chartItems: [ChartItem] = []
+    var revision = 0
+
+    var kindLabel: String {
+        switch kind {
+        case .table: return "Table"
+        case .json: return "JSON"
+        case .code: return language?.isEmpty == false ? (language ?? "Code") : "Code"
+        case .markdown: return "Document"
+        case .chart: return "Chart"
+        }
+    }
+
+    var icon: String {
+        switch kind {
+        case .table: return "tablecells"
+        case .json: return "curlybraces"
+        case .code: return "chevron.left.forwardslash.chevron.right"
+        case .markdown: return "doc.richtext"
+        case .chart: return "chart.bar.fill"
+        }
+    }
+
+    var copyText: String {
+        switch kind {
+        case .table:
+            guard let table else { return body }
+            let header = table.columns.joined(separator: "\t")
+            let lines = table.rows.map { $0.joined(separator: "\t") }
+            return ([header] + lines).joined(separator: "\n")
+        case .json, .code, .markdown:
+            return body
+        case .chart:
+            return chartItems.map { "\($0.label)\t\($0.value)" }.joined(separator: "\n")
+        }
+    }
+}

@@ -30,6 +30,8 @@ enum Theme {
     static let springClose = Animation.spring(response: 0.22, dampingFraction: 0.9)
     static let springCard = Animation.spring(response: 0.36, dampingFraction: 0.84)
     static let springQuick = Animation.spring(response: 0.2, dampingFraction: 0.9)
+    /// Slow breathing for status dots. Still a spring; never ease-in.
+    static let springPulse = Animation.spring(response: 1.15, dampingFraction: 0.72).repeatForever(autoreverses: true)
 
     static func font(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
         .system(size: size, weight: weight, design: .rounded)

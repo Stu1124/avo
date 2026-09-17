@@ -13,6 +13,10 @@ final class Settings: ObservableObject {
     @Published var brainEffort = "none" { didSet { save("brainEffort", brainEffort) } }
     @Published var deepEffort = "max" { didSet { save("deepEffort", deepEffort) } }
     @Published var realtimeModel = "gpt-realtime-2.1" { didSet { save("realtimeModel", realtimeModel) } }
+    /// OpenAI Realtime voice id. Immutable for a live session after the first audio chunk.
+    @Published var realtimeVoice = "cedar" { didSet { save("realtimeVoice", realtimeVoice) } }
+    /// Seconds of idle audio before voice mode ends itself. 0 = never.
+    @Published var voiceSilenceSeconds = 25 { didSet { save("voiceSilenceSeconds", voiceSilenceSeconds) } }
     @Published var ttsModel = "gemini-3.1-flash-tts-preview" { didSet { save("ttsModel", ttsModel) } }
     @Published var ttsVoice = "Charon" { didSet { save("ttsVoice", ttsVoice) } }
     @Published var ttsStyle = "calm, composed, quietly confident, like a discreet British butler" { didSet { save("ttsStyle", ttsStyle) } }
@@ -140,6 +144,8 @@ final class Settings: ObservableObject {
         if !d.bool(forKey: "migratedEffortNone") { brainEffort = "none"; d.set("none", forKey: "brainEffort"); d.set(true, forKey: "migratedEffortNone") }
         deepEffort = d.string(forKey: "deepEffort") ?? deepEffort
         realtimeModel = d.string(forKey: "realtimeModel") ?? realtimeModel
+        realtimeVoice = d.string(forKey: "realtimeVoice") ?? realtimeVoice
+        voiceSilenceSeconds = d.object(forKey: "voiceSilenceSeconds") as? Int ?? voiceSilenceSeconds
         ttsModel = d.string(forKey: "ttsModel") ?? ttsModel
         ttsVoice = d.string(forKey: "ttsVoice") ?? ttsVoice
         ttsStyle = d.string(forKey: "ttsStyle") ?? ttsStyle

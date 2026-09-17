@@ -30,6 +30,7 @@ struct NotchSurface: View {
         let expanded = model.expanded
         let compact = model.isCompactComposer
         let listening = model.phase == .listening
+        let compactListening = listening && !model.voiceModeActive
         // Pointer over the collapsed notch. Listening, thinking and replying own the notch already,
         // so the hover reaction stays out of their way.
         let busy = model.phase == .listening || model.phase == .thinking || model.phase == .responding
@@ -37,9 +38,10 @@ struct NotchSurface: View {
         // Reduce Motion keeps the glow — it is the part that says "clickable" — and drops the growth.
         let lift: CGFloat = hover && !reduceMotion ? 1 : 0
         let collapsedHeight = notchHeight + lift * 4
-        // Listening should read as a subtle extension of the hardware, not an opened window.
+        // Hold-to-talk should read as a subtle extension of the hardware, not an opened window.
+        // Voice mode keeps the full conversation panel so prior turns and artifacts stay on screen.
         let listeningWidth = max(notchWidth + 44, 320)
-        let width: CGFloat = expanded ? (listening ? listeningWidth : (compact ? 360 : NotchController.expandedWidth)) : notchWidth + lift * 12
+        let width: CGFloat = expanded ? (compactListening ? listeningWidth : (compact ? 360 : NotchController.expandedWidth)) : notchWidth + lift * 12
         ZStack(alignment: .top) {
             NotchShape(topRadius: expanded ? 14 : 8, bottomRadius: expanded ? Theme.radiusNotch : 12)
                 .fill(Color.black)
@@ -53,23 +55,24 @@ struct NotchSurface: View {
                         .stroke(Color.white.opacity(expanded ? 0.10 : 0), lineWidth: 0.8)
                 )
 
-            if expanded, listening {
+            if expanded, compactListening {
                 CompactListeningView(model: model)
                     .padding(.top, notchHeight + 4)
                     .padding(.horizontal, 14)
                     .padding(.bottom, 7)
+                    .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
             } else if expanded, compact {
                 ComposerView(model: model, controller: controller)
                     .padding(.top, notchHeight + 6)
                     .padding(.horizontal, 10)
                     .padding(.bottom, 10)
-                    .transition(.opacity)
+                    .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
             } else if expanded {
                 NotchContent(model: model, controller: controller)
                     .padding(.top, notchHeight + 6)
                     .padding(.horizontal, 14)
                     .padding(.bottom, 14)
-                    .transition(.opacity)
+                    .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
             } else {
                 // Collapsed: the panel ignores mouse events (global monitors catch the notch click and
                 // the pointer moving over it), so the shape is the bare notch plus the hover reaction.
@@ -81,8 +84,9 @@ struct NotchSurface: View {
         // Quick springs: open/close and the listening→full width change animate inside the controller's
         // fixed canvas, so the window never has to chase the glass mid-animation.
         .animation(expanded ? Theme.springOpen : Theme.springClose, value: expanded)
-        .animation(Theme.springQuick, value: listening)
+        .animation(Theme.springQuick, value: compactListening)
         .animation(Theme.springQuick, value: compact)
+        .animation(Theme.springQuick, value: model.phase)
         // Hangs from the top edge, so the notch grows down and out by a couple of points.
         .animation(reduceMotion ? nil : Theme.springQuick, value: hover)
         .onGeometryChange(for: CGRect.self) { proxy in
@@ -120,6 +124,7 @@ struct CompactListeningView: View {
 struct CollapsedIndicator: View {
     @ObservedObject var model: NotchModel
     @ObservedObject var wake = WakeWordState.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pulse = false
     var body: some View {
         HStack {
@@ -133,7 +138,10 @@ struct CollapsedIndicator: View {
                     .fill(model.sideTasks.contains(where: { $0.needsInput }) ? Theme.warn : Theme.accent)
                     .frame(width: 6, height: 6)
                     .opacity(pulse ? 1 : 0.35)
-                    .onAppear { withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { pulse = true } }
+                    .onAppear {
+                        if reduceMotion { pulse = true; return }
+                        withAnimation(Theme.springPulse) { pulse = true }
+                    }
                     .padding(.trailing, 10)
             }
         }

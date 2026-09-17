@@ -332,7 +332,8 @@ final class AgentRuntime {
         notch.finishStatus(chip, ok: result.ok)
         // Read tools: glance/file cards show only when the model asked (`show: true`). Interactive cards always show.
         let wantsShow = (args["show"] as? Bool) ?? ((args["show"] as? String).map { ($0 as NSString).boolValue } ?? false)
-        let cards: [CardKind] = (tool.confirmation == nil && !wantsShow) ? result.cards.filter { c in
+        let alwaysShow = tool.name.hasPrefix("present_")
+        let cards: [CardKind] = (tool.confirmation == nil && !wantsShow && !alwaysShow) ? result.cards.filter { c in
             switch c { case .glance, .files: return !result.ok   // keep error/connect cards
                        default: return true }
         } : result.cards

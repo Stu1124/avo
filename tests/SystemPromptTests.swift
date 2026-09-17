@@ -6,6 +6,7 @@ struct SystemPromptTests {
     static func main() {
         let anon = SystemPromptRender.render(userName: "", writingStyle: "STYLE", contexts: [], memory: "", includeVoice: true)
         precondition(anon.contains("the user's voice assistant"), "empty name falls back to 'the user'")
+        precondition(anon.contains("present_table") && anon.contains("present_json"), "artifact tools are in the response rules")
         precondition(anon.contains("the notch of their Mac"), "no gendered pronoun")
         precondition(anon.hasPrefix("You are Avo, the user's voice assistant"), "nothing personal ahead of the persona line")
         precondition(!anon.contains("<context "), "no context block when there are no context files")

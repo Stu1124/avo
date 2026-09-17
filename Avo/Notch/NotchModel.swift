@@ -29,6 +29,9 @@ final class NotchModel: ObservableObject {
     @Published var deepMode = false
     @Published var sideTasks: [SideTask] = []
     @Published var pendingConfirmationId: UUID?
+    /// Live OpenAI Realtime conversation. The full panel stays open; hold-to-talk still uses the compact strip.
+    @Published var voiceModeActive = false
+    @Published var voiceMuted = false
 
     struct PriorTurn: Identifiable, Equatable { let id: UUID; var user: String; var reply: String }
 
@@ -69,6 +72,21 @@ final class NotchModel: ObservableObject {
         if speaking { speaking = false }
     }
 
+    /// Park the live transcript and reply as a prior turn without wiping cards or voice-mode flags.
+    /// Used when the next utterance starts in a live conversation.
+    func foldLiveTurn() {
+        let user = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        let reply = responseText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !reply.isEmpty {
+            priorTurns.append(.init(id: UUID(), user: user.isEmpty ? " " : user, reply: reply))
+        }
+        if priorTurns.count > 12 { priorTurns.removeFirst(priorTurns.count - 12) }
+        transcript = ""
+        responseText = ""
+        if speaking { speaking = false }
+        if errorText != nil { errorText = nil }
+    }
+
     func reset() {
         finalizingSpeech = false
         microphoneReady = false
@@ -81,6 +99,8 @@ final class NotchModel: ObservableObject {
         if errorText != nil { errorText = nil }
         if pendingConfirmationId != nil { pendingConfirmationId = nil }
         if speaking { speaking = false }
+        if voiceModeActive { voiceModeActive = false }
+        if voiceMuted { voiceMuted = false }
     }
 }
 
@@ -99,6 +119,7 @@ enum CardKind {
     case task(TaskCard)
     case reminder(ReminderCard)
     case question(QuestionCard)
+    case artifact(ArtifactCard)
     var revision: Int {
         switch self {
         case .confirmation(let c): return c.revision
@@ -108,6 +129,7 @@ enum CardKind {
         case .task(let t): return t.revision
         case .reminder(let r): return r.revision
         case .question(let q): return q.revision
+        case .artifact(let a): return a.revision
         }
     }
 }
