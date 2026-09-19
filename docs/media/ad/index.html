@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Avo</title>
+  <style>
+    @font-face { font-family: Inter; src: url("./fonts/Inter-Regular.ttf") format("truetype"); font-weight: 400; }
+    @font-face { font-family: Inter; src: url("./fonts/Inter-Medium.ttf") format("truetype"); font-weight: 500; }
+    @font-face { font-family: Inter; src: url("./fonts/Inter-SemiBold.ttf") format("truetype"); font-weight: 600; }
+    @font-face { font-family: Inter; src: url("./fonts/Inter-Bold.ttf") format("truetype"); font-weight: 700; }
+
+    html, body {
+      margin: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #000;
+      color: #f5f5f7;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #stage { position: relative; width: 1920px; height: 1080px; background: #000; }
+
+    #desktop {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+    }
+
+    #wallpaper {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -8%, rgba(55, 143, 255, 0.22), transparent 58%),
+        radial-gradient(ellipse 36% 28% at 12% 92%, rgba(55, 143, 255, 0.07), transparent 70%),
+        radial-gradient(ellipse 30% 24% at 90% 86%, rgba(80, 90, 110, 0.16), transparent 70%),
+        linear-gradient(180deg, #171b24 0%, #0c0e14 46%, #07080c 100%);
+    }
+
+    #wallpaper::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");
+      opacity: 0.05;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    #menubar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px 0 16px;
+      background: linear-gradient(180deg, rgba(10, 11, 16, 0.62), rgba(10, 11, 16, 0.32));
+      backdrop-filter: blur(28px) saturate(1.25);
+      -webkit-backdrop-filter: blur(28px) saturate(1.25);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0;
+      color: rgba(255, 255, 255, 0.92);
+      z-index: 20;
+    }
+    #menubar .left, #menubar .right { display: flex; align-items: center; gap: 15px; min-width: 300px; }
+    #menubar .right { justify-content: flex-end; gap: 13px; }
+    #menubar .app { font-weight: 600; }
+    #menubar .dim { color: rgba(255, 255, 255, 0.7); }
+
+    #notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 196px;
+      height: 34px;
+      transform: translateX(-50%);
+      background: #000;
+      border-radius: 0 0 18px 18px;
+      z-index: 21;
+    }
+
+    #notch-glow {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      width: 380px;
+      height: 100px;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse at 50% 28%, rgba(55, 143, 255, 0.62), transparent 70%);
+      opacity: 0;
+      filter: blur(16px);
+      z-index: 19;
+      pointer-events: none;
+    }
+
+    #hero-mark {
+      position: absolute;
+      left: 50%;
+      top: 40%;
+      width: 280px;
+      height: 130px;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      z-index: 5;
+    }
+    #hero-mark svg, #end-mark svg { width: 100%; height: 100%; overflow: visible; }
+
+    .shot {
+      position: absolute;
+      left: 50%;
+      top: 86px;
+      opacity: 0;
+      z-index: 6;
+      filter: drop-shadow(0 30px 70px rgba(0, 0, 0, 0.7));
+    }
+    .shot img { display: block; height: auto; border-radius: 16px; }
+
+    #shot-onboarding { top: 72px; }
+    #shot-onboarding img { width: 900px; }
+    #shot-confirm, #shot-notch { top: 38px; }
+    #shot-confirm img { width: 880px; }
+    #shot-notch img { width: 840px; }
+    #shot-coding {
+      left: auto;
+      right: 48px;
+      top: 56px;
+    }
+    #shot-coding img { width: 400px; }
+
+    #lower {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 170px;
+      background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.78) 74%);
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    #copy {
+      position: absolute;
+      left: 80px;
+      right: 80px;
+      bottom: 52px;
+      text-align: center;
+      z-index: 16;
+      pointer-events: none;
+    }
+    #kicker {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #378FFF;
+      margin-bottom: 10px;
+      min-height: 16px;
+    }
+    #line {
+      font-size: 40px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      word-spacing: 0.04em;
+      line-height: 1.15;
+      color: #f5f5f7;
+    }
+
+    #endcard {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+      opacity: 0;
+      background:
+        radial-gradient(ellipse 52% 44% at 50% 40%, rgba(55, 143, 255, 0.16), transparent 68%),
+        #05060a;
+    }
+    #end-mark { width: 240px; height: 112px; margin-bottom: 30px; }
+    #end-name { font-size: 76px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; margin-bottom: 16px; }
+    #end-tag { font-size: 26px; font-weight: 500; letter-spacing: -0.015em; color: rgba(245,245,247,0.64); margin-bottom: 34px; }
+    #end-url { font-size: 20px; font-weight: 500; color: #378FFF; }
+
+    #vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 40;
+      background: radial-gradient(ellipse 80% 74% at 50% 46%, transparent 58%, rgba(0,0,0,0.38) 100%);
+    }
+
+    .mark-stroke {
+      fill: none;
+      stroke: #378FFF;
+      stroke-width: 62;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <div id="desktop">
+      <div id="wallpaper"></div>
+      <div id="menubar">
+        <div class="left">
+          <span class="app">Avo</span>
+          <span class="dim">File</span>
+          <span class="dim">Edit</span>
+          <span class="dim">View</span>
+          <span class="dim">Window</span>
+          <span class="dim">Help</span>
+        </div>
+        <div class="right">
+          <svg width="16" height="11" viewBox="0 0 16 11" aria-hidden="true">
+            <path d="M1.2 7.6a7.2 7.2 0 0 1 13.6 0" fill="none" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M3.6 9.1a4.4 4.4 0 0 1 8.8 0" fill="none" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="8" cy="10.2" r="0.85" fill="white"/>
+          </svg>
+          <svg width="24" height="12" viewBox="0 0 24 12" aria-hidden="true">
+            <rect x="0.6" y="1.1" width="20" height="9.8" rx="2.2" fill="none" stroke="white" stroke-width="1.2"/>
+            <rect x="2.1" y="2.6" width="14.2" height="6.8" rx="1" fill="white"/>
+            <rect x="21.6" y="4.3" width="1.6" height="3.4" rx="0.6" fill="white"/>
+          </svg>
+          <span>Thu 7:14 PM</span>
+        </div>
+      </div>
+      <div id="notch-glow"></div>
+      <div id="notch"></div>
+
+      <div id="hero-mark">
+        <svg viewBox="178 357 668 310" aria-hidden="true">
+          <path class="mark-stroke hero" d="M 440.38 450 A 124 124 0 1 0 440.38 574"/>
+          <path class="mark-stroke hero" d="M 457 388 L 457 636"/>
+          <path class="mark-stroke hero" d="M 579 540 L 579 636"/>
+          <path class="mark-stroke hero" d="M 697 490 L 697 636"/>
+          <path class="mark-stroke hero" d="M 815 445 L 815 636"/>
+        </svg>
+      </div>
+
+      <div class="shot" id="shot-onboarding"><img src="./onboarding.jpg" alt=""></div>
+      <div class="shot" id="shot-confirm"><img src="./confirm-card.png" alt=""></div>
+      <div class="shot" id="shot-notch"><img src="./notch-answer.png" alt=""></div>
+      <div class="shot" id="shot-coding"><img src="./coding-tasks.png" alt=""></div>
+    </div>
+
+    <div id="lower"></div>
+    <div id="copy">
+      <div id="kicker"></div>
+      <div id="line"></div>
+    </div>
+
+    <div id="endcard">
+      <div id="end-mark">
+        <svg viewBox="178 357 668 310" aria-hidden="true">
+          <path class="mark-stroke end" d="M 440.38 450 A 124 124 0 1 0 440.38 574"/>
+          <path class="mark-stroke end" d="M 457 388 L 457 636"/>
+          <path class="mark-stroke end" d="M 579 540 L 579 636"/>
+          <path class="mark-stroke end" d="M 697 490 L 697 636"/>
+          <path class="mark-stroke end" d="M 815 445 L 815 636"/>
+        </svg>
+      </div>
+      <div id="end-name">Avo</div>
+      <div id="end-tag">The Siri you never had.</div>
+      <div id="end-url">github.com/Stu1124/avo</div>
+    </div>
+    <div id="vignette"></div>
+  </div>
+
+  <script>
+    const DURATION = 40;
+    const $ = (id) => document.getElementById(id);
+
+    const copy = [
+      { at: 3.1, until: 6.6, kicker: "", text: "Siri was supposed to do this." },
+      { at: 6.8, until: 10.2, kicker: "", text: "So we built the one that does." },
+      { at: 10.5, until: 15.2, kicker: "On your Mac", text: "Hold a key. Say it. Done." },
+      { at: 15.5, until: 20.3, kicker: "Before anything leaves", text: "You read it. You can edit it. Then it sends." },
+      { at: 20.6, until: 25.2, kicker: "In the notch", text: "Answers stay up top. Then it collapses." },
+      { at: 25.5, until: 30.0, kicker: "Long work", text: "Claude Code and Codex keep running on the side." },
+      { at: 30.25, until: 34.2, kicker: "Your model", text: "Speech stays on this Mac. Bring your own model." }
+    ];
+
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function mix(a, b, t) { return a + (b - a) * t; }
+    function outCubic(x) { return 1 - Math.pow(1 - x, 3); }
+    function scene(t, a, b, fade) {
+      const f = fade ?? 0.36;
+      if (t < a || t > b) return 0;
+      if (t < a + f) return outCubic((t - a) / f);
+      if (t > b - f) return outCubic((b - t) / f);
+      return 1;
+    }
+    function enter(t, a, dur) {
+      if (t < a) return 0;
+      return outCubic(clamp((t - a) / dur, 0, 1));
+    }
+
+    function dash(paths, t, start) {
+      paths.forEach((p, i) => {
+        const len = p.__len || (p.__len = p.getTotalLength());
+        p.style.strokeDasharray = String(len);
+        const local = clamp((t - (start + i * 0.08)) / 0.62, 0, 1);
+        p.style.strokeDashoffset = String(len * (1 - outCubic(local)));
+      });
+    }
+
+    function applyShot(el, t, a, b, coding) {
+      const vis = scene(t, a, b, 0.4);
+      const e = enter(t, a, 0.75);
+      el.style.opacity = String(vis);
+      if (coding) {
+        el.style.transform = `translateX(${mix(36, 0, e)}px)`;
+      } else {
+        el.style.transform = `translateX(-50%) translateY(${mix(22, 0, e)}px)`;
+      }
+    }
+
+    function apply(t) {
+      const desk = enter(t, 0.12, 1.05);
+      $("desktop").style.opacity = String(desk);
+      $("desktop").style.transform = `scale(${mix(1.04, 1, desk)})`;
+
+      const hero = scene(t, 0.4, 10.15, 0.45);
+      $("hero-mark").style.opacity = String(hero);
+      $("hero-mark").style.transform = `translate(-50%, -50%) scale(${mix(0.92, 1, enter(t, 0.4, 0.9))})`;
+      dash([...document.querySelectorAll("path.hero")], t, 0.45);
+
+      $("notch-glow").style.opacity = String(scene(t, 10.3, 30.1, 0.45) * 0.9);
+      applyShot($("shot-onboarding"), t, 10.4, 15.3, false);
+      applyShot($("shot-confirm"), t, 15.4, 20.4, false);
+      applyShot($("shot-notch"), t, 20.5, 25.3, false);
+      applyShot($("shot-coding"), t, 25.4, 30.1, true);
+
+      let kicker = "", text = "", copyVis = 0;
+      for (const c of copy) {
+        const v = scene(t, c.at, c.until, 0.26);
+        if (v > copyVis) { copyVis = v; kicker = c.kicker; text = c.text; }
+      }
+      $("kicker").textContent = kicker;
+      $("line").textContent = text;
+      $("kicker").style.opacity = String(kicker ? copyVis : 0);
+      $("line").style.opacity = String(copyVis);
+      $("copy").style.opacity = String(1 - clamp((t - 33.85) / 0.3, 0, 1));
+      $("lower").style.opacity = String(1 - clamp((t - 33.85) / 0.3, 0, 1));
+
+      const end = enter(t, 34.25, 0.85);
+      $("endcard").style.opacity = String(end);
+      $("endcard").style.transform = `scale(${mix(1.025, 1, end)})`;
+      $("desktop").style.filter = t > 33.9
+        ? `blur(${mix(0, 12, clamp((t - 33.9) / 0.65, 0, 1))}px) brightness(${mix(1, 0.4, clamp((t - 33.9) / 0.65, 0, 1))})`
+        : "none";
+      dash([...document.querySelectorAll("path.end")], t, 34.4);
+      window.__t = t;
+    }
+
+    let t0 = null;
+    function time() {
+      if (t0 == null) return 0;
+      return clamp((performance.now() - t0) / 1000, 0, DURATION);
+    }
+    function tick() {
+      apply(time());
+      if (time() < DURATION) requestAnimationFrame(tick);
+    }
+
+    async function ready() {
+      await document.fonts.ready;
+      await Promise.all([...document.images].map((img) => img.decode().catch(() => {})));
+      apply(0);
+      window.AD_READY = true;
+    }
+
+    window.play = function play() {
+      t0 = performance.now();
+      window.AD_STARTED = true;
+      requestAnimationFrame(tick);
+    };
+    window.seek = function seek(seconds) {
+      t0 = performance.now() - seconds * 1000;
+      apply(seconds);
+    };
+
+    ready().then(() => {
+      if (new URLSearchParams(location.search).has("play")) window.play();
+    });
+  </script>
+</body>
+</html>
